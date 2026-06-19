@@ -19,7 +19,7 @@ const display = Shippori_Mincho({
 });
 
 export const metadata: Metadata = {
-  title: "Babra — Advisory, distilled",
+  title: "MEETU — Advisory, distilled",
   description:
     "A calm, flowing workspace for financial advisors: leads, meetings, and client profiles.",
 };

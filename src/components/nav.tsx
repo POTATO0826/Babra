@@ -21,7 +21,7 @@ export function Nav() {
             墨
           </span>
           <span className="font-display text-lg tracking-wide text-white/90">
-            Babra
+            MEETU
           </span>
         </Link>
 
