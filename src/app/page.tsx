@@ -1,65 +1,100 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ContourBackground } from "@/components/landing/contour-background";
+import { ObsidianEarth } from "@/components/landing/obsidian-earth";
 
-export default function Home() {
+export default function Landing() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="relative min-h-screen overflow-hidden bg-[#06070b] text-white">
+      {/* Ink contour topography */}
+      <div className="absolute inset-0 opacity-60 animate-drift">
+        <ContourBackground />
+      </div>
+
+      {/* Ambient glows */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(50% 40% at 50% 38%, rgba(70,95,200,0.18), transparent 70%), radial-gradient(40% 40% at 80% 90%, rgba(30,140,150,0.12), transparent 70%)",
+        }}
+      />
+
+      {/* Watermark kanji */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none font-display text-[44vh] leading-none text-white/[0.025]"
+      >
+        墨
+      </span>
+
+      {/* Grain */}
+      <div className="grain pointer-events-none absolute inset-0 opacity-[0.04] mix-blend-overlay" />
+
+      {/* Glass nav */}
+      <header className="relative z-20 mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+        <div className="flex items-center gap-2.5">
+          <span className="glass-tile flex h-9 w-9 items-center justify-center rounded-xl font-display text-lg text-white/90">
+            墨
+          </span>
+          <span className="font-display text-lg tracking-wide text-white/90">
+            Babra
+          </span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <Link
+          href="/leads"
+          className="glass rounded-full px-5 py-2 text-sm font-medium text-white/85 transition-colors hover:text-white"
+        >
+          Enter app
+        </Link>
+      </header>
+
+      {/* Hero */}
+      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-80px)] max-w-4xl flex-col items-center justify-center px-6 pb-16 text-center">
+        <p className="animate-rise mb-2 text-xs font-medium uppercase tracking-[0.4em] text-white/45">
+          序 · Advisory, distilled
+        </p>
+
+        {/* Obsidian Earth */}
+        <div className="animate-rise relative h-[clamp(280px,46vh,460px)] w-[clamp(280px,46vh,460px)] [animation-delay:120ms]">
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 rounded-full blur-3xl"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(80,110,230,0.35), transparent 62%)",
+            }}
+          />
+          <ObsidianEarth />
         </div>
-      </main>
-    </div>
+
+        <h1 className="animate-rise -mt-6 font-display text-6xl font-extrabold tracking-tight sm:text-7xl [animation-delay:200ms]">
+          <span className="ink-text">Babra</span>
+        </h1>
+
+        <p className="animate-rise mt-5 max-w-xl text-balance text-base leading-relaxed text-white/55 sm:text-lg [animation-delay:300ms]">
+          Leads, meetings, and client profiles — drawn together into one calm,
+          flowing workspace for the modern financial advisor.
+        </p>
+
+        <div className="animate-rise mt-9 flex items-center gap-3 [animation-delay:400ms]">
+          <Link
+            href="/leads"
+            className="group relative overflow-hidden rounded-full bg-white px-7 py-3 text-sm font-semibold text-black transition-transform hover:scale-[1.03]"
+          >
+            Enter workspace
+            <span className="ml-1.5 inline-block transition-transform group-hover:translate-x-0.5">
+              →
+            </span>
+          </Link>
+          <Link
+            href="/clients"
+            className="glass rounded-full px-7 py-3 text-sm font-medium text-white/80 transition-colors hover:text-white"
+          >
+            View clients
+          </Link>
+        </div>
+      </section>
+    </main>
   );
 }
