@@ -8,6 +8,7 @@ const leadStatus = v.union(
   v.literal("Contacted"),
   v.literal("Qualified"),
   v.literal("Proposal"),
+  v.literal("Converted"),
 );
 
 const meetingMode = v.union(
@@ -93,14 +94,135 @@ export const claimConversationAnalysis = internalMutation({
         await ctx.db.patch(args.conversationId, { leadId: lead._id });
       }
     }
+    const clientId = conversation.clientId ?? lead?.clientId;
+    const client = clientId ? await ctx.db.get(clientId) : null;
+    if (client && !conversation.clientId) {
+      await ctx.db.patch(args.conversationId, { clientId: client._id });
+    }
 
     return {
       conversation,
       lead,
+      client,
       recentMessages: messages
         .sort((a, b) => a.receivedAt.localeCompare(b.receivedAt))
         .slice(-30),
       pendingMessageIds: pendingMessages.map((message) => message._id),
+    };
+  },
+});
+
+export const convertLeadToClient = internalMutation({
+  args: {
+    leadId: v.id("leads"),
+    confidence: v.number(),
+    rationale: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (args.confidence < 0.9) {
+      return { converted: false, reason: "confidence_too_low" };
+    }
+
+    const lead = await ctx.db.get(args.leadId);
+    if (!lead) throw new Error("Lead not found");
+
+    let client = lead.clientId ? await ctx.db.get(lead.clientId) : null;
+    if (!client) {
+      client = await ctx.db
+        .query("clients")
+        .withIndex("by_phone", (q) => q.eq("phone", lead.phone))
+        .unique();
+    }
+
+    const now = new Date().toISOString();
+    const today = now.slice(0, 10);
+    const advisor = lead.advisorId ? await ctx.db.get(lead.advisorId) : null;
+    const clientId =
+      client?._id ??
+      (await ctx.db.insert("clients", {
+        externalId: `lead-${lead._id}`,
+        slug: `${slugify(lead.name)}-${lead._id.slice(-6)}`,
+        name: lead.name,
+        age: lead.age,
+        occupation: lead.occupation,
+        location: lead.location,
+        email: lead.email,
+        phone: lead.phone,
+        status: "Onboarding",
+        clientSince: today,
+        advisorName: advisor?.name ?? "MVP Advisor",
+        advisorId: lead.advisorId,
+        cadence: "To be determined",
+        nextReview: addDays(today, 90),
+        dependents: [],
+        aum: lead.estimatedPortfolio,
+        netWorth: lead.estimatedPortfolio,
+        riskTolerance: "Moderate",
+        timeHorizon: "To be determined",
+        accounts: [],
+        allocation: [],
+        goals: lead.serviceInterest
+          ? [
+              {
+                name: lead.serviceInterest,
+                detail: lead.whyApproached || lead.situationTeaser,
+              },
+            ]
+          : [],
+        serviceTopics: [lead.serviceInterest],
+        description: lead.situationTeaser,
+        situation: lead.situation,
+        whyApproached: lead.whyApproached,
+        notes: lead.notes,
+        createdAt: now,
+        updatedAt: now,
+      }));
+
+    const timelineEvent = {
+      date: today,
+      label: "Converted to client profile",
+    };
+    const hasConversionEvent = lead.timeline.some(
+      (event) =>
+        event.date === timelineEvent.date && event.label === timelineEvent.label,
+    );
+    await ctx.db.patch(lead._id, {
+      clientId,
+      status: "Converted",
+      timeline: hasConversionEvent
+        ? lead.timeline
+        : [...lead.timeline, timelineEvent],
+      updatedAt: now,
+    });
+
+    const conversations = await ctx.db
+      .query("whatsappConversations")
+      .withIndex("by_lead", (q) => q.eq("leadId", lead._id))
+      .take(100);
+    for (const conversation of conversations) {
+      await ctx.db.patch(conversation._id, { clientId, updatedAt: now });
+    }
+
+    const meetings = await ctx.db
+      .query("meetings")
+      .withIndex("by_lead", (q) => q.eq("leadId", lead._id))
+      .take(100);
+    for (const meeting of meetings) {
+      await ctx.db.patch(meeting._id, { clientId, updatedAt: now });
+    }
+
+    const tasks = await ctx.db
+      .query("advisorTasks")
+      .withIndex("by_lead", (q) => q.eq("leadId", lead._id))
+      .take(100);
+    for (const task of tasks) {
+      await ctx.db.patch(task._id, { clientId, updatedAt: now });
+    }
+
+    return {
+      converted: true,
+      clientId,
+      action: client ? "linked_existing_client" : "created_client",
     };
   },
 });
@@ -534,4 +656,18 @@ function compactPatch<T extends Record<string, unknown>>(patch: T) {
   return Object.fromEntries(
     Object.entries(patch).filter(([, value]) => value !== undefined),
   ) as Partial<Doc<"leads">>;
+}
+
+function slugify(value: string) {
+  const slug = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || "client";
+}
+
+function addDays(isoDate: string, days: number) {
+  const date = new Date(`${isoDate}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }

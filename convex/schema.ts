@@ -6,6 +6,7 @@ const leadStatus = v.union(
   v.literal("Contacted"),
   v.literal("Qualified"),
   v.literal("Proposal"),
+  v.literal("Converted"),
 );
 
 const serviceInterest = v.union(
@@ -328,6 +329,20 @@ export default defineSchema({
     .index("by_conversation", ["conversationId"])
     .index("by_client", ["clientId"])
     .index("by_lead", ["leadId"]),
+
+  agentEvents: defineTable({
+    type: v.union(v.literal("ManualLeadConversion")),
+    leadId: v.optional(v.id("leads")),
+    clientId: v.optional(v.id("clients")),
+    conversationId: v.optional(v.id("whatsappConversations")),
+    summary: v.string(),
+    metadata: v.any(),
+    createdAt: isoDateTime,
+  })
+    .index("by_lead", ["leadId"])
+    .index("by_client", ["clientId"])
+    .index("by_conversation", ["conversationId"])
+    .index("by_type", ["type"]),
 
   advisorTasks: defineTable({
     advisorId: v.id("advisors"),

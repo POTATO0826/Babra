@@ -20,6 +20,7 @@ type ClaimedAnalysis = {
     clientId?: Id<"clients">;
   };
   lead: LeadSnapshot | null;
+  client: ClientSnapshot | null;
   recentMessages: MessageSnapshot[];
   pendingMessageIds: Id<"whatsappMessages">[];
 } | null;
@@ -32,7 +33,7 @@ type LeadSnapshot = {
   location: string;
   occupation: string;
   age: number;
-  status: "New" | "Contacted" | "Qualified" | "Proposal";
+  status: "New" | "Contacted" | "Qualified" | "Proposal" | "Converted";
   serviceInterest:
     | "Retirement Planning"
     | "Investment Management"
@@ -46,6 +47,19 @@ type LeadSnapshot = {
   whyApproached: string;
   notes: string[];
   timeline: Array<{ date: string; label: string }>;
+};
+
+type ClientSnapshot = {
+  _id: Id<"clients">;
+  name: string;
+  email: string;
+  phone: string;
+  status: "Active" | "Onboarding" | "Review due";
+  clientSince: string;
+  serviceTopics: LeadSnapshot["serviceInterest"][];
+  situation: string;
+  whyApproached: string;
+  notes: string[];
 };
 
 type MessageSnapshot = {
@@ -100,6 +114,21 @@ const updateLeadStatus = makeFunctionReference<
   },
   { updated: boolean; reason?: string }
 >("conversationAgent:updateLeadStatus");
+
+const convertLeadToClient = makeFunctionReference<
+  "mutation",
+  {
+    leadId: Id<"leads">;
+    confidence: number;
+    rationale: string;
+  },
+  {
+    converted: boolean;
+    reason?: string;
+    clientId?: Id<"clients">;
+    action?: string;
+  }
+>("conversationAgent:convertLeadToClient");
 
 const appendLeadNote = makeFunctionReference<
   "mutation",
@@ -265,7 +294,6 @@ export const analyzeConversation = internalAction({
       const memories = await searchMemories(claimed.conversation.participantPhone);
       const facts: ExtractedFact[] = [];
       const actions: SuggestedAction[] = [];
-
       const result = await generateText({
         model: kimi.chatModel(modelId),
         system: buildSystemPrompt(),
@@ -311,7 +339,8 @@ function buildTools(
 ) {
   return {
     findLeadByPhone: tool({
-      description: "Find an existing lead by exact phone number.",
+      description:
+        "Find an existing lead by exact phone number. Use this before creating a new lead when the conversation is not already linked to a lead, or when you need to verify whether the WhatsApp participant already exists in the lead pipeline.",
       inputSchema: z.object({ phone: z.string() }),
       execute: async ({ phone }) => {
         return await ctx.runQuery(findLeadByPhone, { phone });
@@ -319,7 +348,7 @@ function buildTools(
     }),
     createLeadFromConversation: tool({
       description:
-        "Create a lead for this WhatsApp conversation when no matching lead exists.",
+        "Create a lead for this WhatsApp conversation. Use this when there is no linked lead/client and the sender appears to be a prospective client or is asking for financial-advisor help. Do not use if an existing lead or client is already linked or can be found by phone.",
       inputSchema: createLeadInputSchema,
       execute: async (input) => {
         actions.push({
@@ -336,7 +365,7 @@ function buildTools(
     }),
     updateLeadProfile: tool({
       description:
-        "Update stable lead fields. Only use when the client clearly stated the information.",
+        "Update stable lead profile fields such as name, email, phone, location, occupation, age, service interest, portfolio estimate, situation, or reason for reaching out. Use only when the participant clearly states or confirms the information. Do not guess, infer demographics, or overwrite known fields from vague context.",
       inputSchema: z.object({
         leadId: z.string(),
         patch: leadProfilePatchSchema,
@@ -370,7 +399,7 @@ function buildTools(
     }),
     updateLeadStatus: tool({
       description:
-        "Move the lead pipeline status only when the conversation clearly supports it.",
+        "Move a lead through the active pipeline stages: New, Contacted, Qualified, or Proposal. Use when the newest conversation clearly supports a pipeline change, such as a first reply, qualification details, or proposal discussion. Do not use this for client conversion; use convertLeadToClient when the lead has become a client.",
       inputSchema: z.object({
         leadId: z.string(),
         status: leadStatusSchema,
@@ -392,9 +421,31 @@ function buildTools(
         });
       },
     }),
+    convertLeadToClient: tool({
+      description:
+        "Convert an existing lead into a client profile. Use this tool whenever the conversation clearly indicates the lead has become a client, including accepted proposal, signed-up language, onboarding agreement, or an advisor message confirming the person is being onboarded/accepted as a client. Do not use for ordinary interest, a scheduled meeting, or vague encouragement.",
+      inputSchema: z.object({
+        leadId: z.string(),
+        confidence: z.number(),
+        rationale: z.string(),
+      }),
+      execute: async ({ leadId, confidence, rationale }) => {
+        actions.push({
+          type: "UpdateClient",
+          title: "Converted lead to client",
+          rationale,
+          confidence,
+        });
+        return await ctx.runMutation(convertLeadToClient, {
+          leadId: leadId as Id<"leads">,
+          confidence,
+          rationale,
+        });
+      },
+    }),
     appendLeadNote: tool({
       description:
-        "Append a concise advisor note with useful conversation context.",
+        "Append a concise advisor note to the lead. Use for useful qualitative context that should be visible to the advisor, such as preferences, constraints, stated goals, missing information, meeting preferences, or important conversation milestones. Do not duplicate existing notes or store trivial chat acknowledgements.",
       inputSchema: z.object({
         leadId: z.string(),
         note: z.string(),
@@ -411,7 +462,7 @@ function buildTools(
     }),
     appendLeadTimelineEvent: tool({
       description:
-        "Add a dated timeline event for meaningful client intent or milestone.",
+        "Add a dated timeline event to the lead. Use for meaningful milestones such as lead creation, qualification, meeting confirmation, proposal sent, onboarding, or other date-specific events. Do not use for ordinary back-and-forth messages or facts that are better stored as notes.",
       inputSchema: z.object({
         leadId: z.string(),
         date: z.string(),
@@ -435,7 +486,7 @@ function buildTools(
     }),
     createLeadFollowUpTask: tool({
       description:
-        "Create an advisor follow-up task when the advisor needs to act later.",
+        "Create an advisor follow-up task tied to a lead. Use when the conversation creates a future action for the advisor, such as sending documents, following up on missing details, confirming a time/location, or checking back on a deadline. Do not use for actions already completed in the conversation.",
       inputSchema: z.object({
         leadId: z.string(),
         title: z.string(),
@@ -459,7 +510,7 @@ function buildTools(
     }),
     upsertMeetingFromConversation: tool({
       description:
-        "Create or update a meeting in the schedule when the client and advisor have a clear meeting date and time.",
+        "Create or update a meeting in the schedule. Use only when the conversation includes a clear meeting date, time, participant acceptance, meeting mode, and enough location/link/phone context for the advisor to act. If the participant only expresses preference or interest without accepting a specific slot, create a follow-up task instead.",
       inputSchema: meetingInputSchema.extend({
         leadId: z.string().optional(),
         clientId: z.string().optional(),
@@ -497,7 +548,7 @@ function buildTools(
     }),
     storeMemoryFact: tool({
       description:
-        "Store durable client facts in Mem0, such as preferences, goals, constraints, and context.",
+        "Store a durable client memory in Mem0. Use for stable facts that should help future conversations, such as goals, preferences, constraints, language, location, family context, risk tolerance, or client status. Do not store advisor names as client nicknames, transient scheduling chatter, or facts from outbound advisor identity metadata.",
       inputSchema: z.object({
         fact: z.string(),
         category: z.string(),
@@ -524,12 +575,18 @@ function buildTools(
 function buildSystemPrompt() {
   return [
     "You are an assistant for one financial advisor using WhatsApp with leads.",
-    "Analyze only the provided conversation context and existing lead state.",
+    "Analyze only the provided conversation context and existing lead/client state.",
     "Use tools to create or update Convex records; do not claim an update happened unless a tool succeeds.",
+    "The newest pending messages are the reason you were called. Evaluate them first, then use prior messages only as context.",
     "Be conservative. Do not infer exact age, portfolio, meeting date, or pipeline status from vague language.",
+    "Lead-to-client conversion rule: if a linked lead has no linked client and the newest messages clearly show onboarding, accepted proposal, signed-up language, or advisor confirmation that the person is being onboarded/accepted as a client, you must call convertLeadToClient.",
+    "Advisor outbound messages are authoritative business state. If the advisor tells the contact they are now a client, will be onboarded as a client, or are accepted as a client, convert the lead even if the client did not say the exact words.",
+    "Do not merely summarize a clear client-conversion event. Call convertLeadToClient first, then summarize the completed update.",
+    "Do not convert from vague encouragement, a scheduled meeting, or ordinary interest alone.",
     "Only schedule or update a meeting when the conversation includes a specific date/time and clear acceptance in the same context.",
     "When scheduling, convert the meeting start to an ISO datetime. The advisor is in Asia/Kuala_Lumpur unless context says otherwise.",
     "If no lead exists and the sender appears to be a prospective client, create a lead.",
+    "If a linked client exists, treat the person as a client and avoid lead-only status changes.",
     "Store durable client facts in Mem0 with storeMemoryFact.",
     "Return a short operational summary for the advisor after tool use.",
   ].join("\n");
@@ -537,7 +594,33 @@ function buildSystemPrompt() {
 
 function buildUserPrompt(claimed: NonNullable<ClaimedAnalysis>, memories: string[]) {
   const conversation = claimed.conversation;
-  const messages = claimed.recentMessages
+  const messages = formatMessages(claimed.recentMessages, conversation);
+  const pendingMessages = formatMessages(
+    claimed.recentMessages.filter((message) =>
+      claimed.pendingMessageIds.includes(message._id),
+    ),
+    conversation,
+  );
+
+  return [
+    `Current time: ${new Date().toISOString()} (advisor timezone: Asia/Kuala_Lumpur)`,
+    `Participant phone: ${conversation.participantPhone}`,
+    `Participant name: ${conversation.participantName ?? "Unknown"}`,
+    `Linked lead: ${claimed.lead ? JSON.stringify(claimed.lead) : "None"}`,
+    `Linked client: ${claimed.client ? JSON.stringify(claimed.client) : "None"}`,
+    `Relevant memories: ${memories.length > 0 ? memories.join(" | ") : "None"}`,
+    "Newest pending messages to analyze:",
+    pendingMessages || "None",
+    "Recent WhatsApp messages:",
+    messages,
+  ].join("\n\n");
+}
+
+function formatMessages(
+  messages: MessageSnapshot[],
+  conversation: NonNullable<ClaimedAnalysis>["conversation"],
+) {
+  return messages
     .map((message) => {
       const speaker =
         message.direction === "Inbound"
@@ -546,16 +629,6 @@ function buildUserPrompt(claimed: NonNullable<ClaimedAnalysis>, memories: string
       return `[${message.receivedAt}] ${speaker}: ${message.body}`;
     })
     .join("\n");
-
-  return [
-    `Current time: ${new Date().toISOString()} (advisor timezone: Asia/Kuala_Lumpur)`,
-    `Participant phone: ${conversation.participantPhone}`,
-    `Participant name: ${conversation.participantName ?? "Unknown"}`,
-    `Linked lead: ${claimed.lead ? JSON.stringify(claimed.lead) : "None"}`,
-    `Relevant memories: ${memories.length > 0 ? memories.join(" | ") : "None"}`,
-    "Recent WhatsApp messages:",
-    messages,
-  ].join("\n\n");
 }
 
 async function searchMemories(phone: string) {
