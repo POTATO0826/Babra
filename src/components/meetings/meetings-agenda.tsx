@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { Meeting } from "@/lib/meetings";
 import { dayKey, formatDayLabel, formatLongDate } from "@/lib/format";
 import {
@@ -147,43 +153,45 @@ export function MeetingsAgenda({ meetings: initialMeetings }: { meetings: Meetin
         />
       ) : (
         <>
-          {groups.length === 0 ? (
-            <div className="px-5 py-20 text-center text-quiet">
-              <div className="mb-2 font-serif text-[21px] text-muted">
-                Nothing on the calendar
+          <div key={view} className="animate-filter-in">
+            {groups.length === 0 ? (
+              <div className="px-5 py-20 text-center text-quiet">
+                <div className="mb-2 font-serif text-[21px] text-muted">
+                  Nothing on the calendar
+                </div>
+                <div className="text-sm">
+                  No {view.toLowerCase()} meetings to show.
+                </div>
               </div>
-              <div className="text-sm">
-                No {view.toLowerCase()} meetings to show.
+            ) : (
+              <div className="flex flex-col gap-[26px]">
+                {groups.map((group) => (
+                  <section key={group.key}>
+                    <div className="mb-3 flex items-baseline gap-3 pl-0.5">
+                      <h2 className="m-0 font-serif text-[19px] font-medium text-ink-soft">
+                        {group.label}
+                      </h2>
+                      <span className="text-xs font-medium tracking-[0.04em] text-dim">
+                        {group.dateLine}
+                      </span>
+                    </div>
+                    <div className="glass-card overflow-hidden rounded-[15px] border">
+                      {group.meetings.map((meeting, i) => (
+                        <MeetingRow
+                          key={meeting.id}
+                          meeting={meeting}
+                          now={now}
+                          first={i === 0}
+                          isNext={meeting.id === nextId}
+                          onSelect={setSelected}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ))}
               </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-[26px]">
-              {groups.map((group) => (
-                <section key={group.key}>
-                  <div className="mb-3 flex items-baseline gap-3 pl-0.5">
-                    <h2 className="m-0 font-serif text-[19px] font-medium text-ink-soft">
-                      {group.label}
-                    </h2>
-                    <span className="text-xs font-medium tracking-[0.04em] text-dim">
-                      {group.dateLine}
-                    </span>
-                  </div>
-                  <div className="glass-card overflow-hidden rounded-[15px] border">
-                    {group.meetings.map((meeting, i) => (
-                      <MeetingRow
-                        key={meeting.id}
-                        meeting={meeting}
-                        now={now}
-                        first={i === 0}
-                        isNext={meeting.id === nextId}
-                        onSelect={setSelected}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          )}
+            )}
+          </div>
         </>
       )}
 
@@ -203,29 +211,66 @@ function LayoutSwitch({
   value: Layout;
   onChange: (value: Layout) => void;
 }) {
+  const switchRef = useRef<HTMLDivElement>(null);
+  const optionRefs = useRef<Partial<Record<Layout, HTMLButtonElement | null>>>({});
+  const [indicator, setIndicator] = useState({ left: 0, width: 0, ready: false });
   const options = [
     { value: "Agenda" as const, icon: AgendaIcon },
     { value: "Calendar" as const, icon: CalendarIcon },
   ];
 
+  useLayoutEffect(() => {
+    const updateIndicator = () => {
+      const container = switchRef.current;
+      const option = optionRefs.current[value];
+      if (!container || !option) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const optionRect = option.getBoundingClientRect();
+      setIndicator({
+        left: optionRect.left - containerRect.left,
+        width: optionRect.width,
+        ready: true,
+      });
+    };
+
+    updateIndicator();
+    const observer = new ResizeObserver(updateIndicator);
+    if (switchRef.current) observer.observe(switchRef.current);
+    return () => observer.disconnect();
+  }, [value]);
+
   return (
     <div
+      ref={switchRef}
       className="glass-card relative -mt-1 flex rounded-[13px] border p-1"
       aria-label="Meeting layout"
     >
+      <span
+        aria-hidden
+        className="pointer-events-none bottom-1 top-1 rounded-[9px] bg-[#FCFAF5]/80 shadow-[0_1px_3px_rgba(38,34,25,0.12)] transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{
+          position: "absolute",
+          left: 0,
+          width: indicator.width,
+          opacity: indicator.ready ? 1 : 0,
+          transform: `translate3d(${indicator.left}px, 0, 0)`,
+        }}
+      />
       {options.map((option) => {
         const active = value === option.value;
         const Icon = option.icon;
         return (
           <button
             key={option.value}
+            ref={(node) => {
+              optionRefs.current[option.value] = node;
+            }}
             type="button"
             aria-pressed={active}
             onClick={() => onChange(option.value)}
-            className={`relative flex items-center gap-2 rounded-[9px] px-4 py-2 text-[13px] font-semibold transition-all ${
-              active
-                ? "bg-[#FCFAF5]/80 text-ink shadow-[0_1px_3px_rgba(38,34,25,0.12)]"
-                : "text-quiet hover:text-muted"
+            className={`relative z-[2] flex items-center gap-2 rounded-[9px] px-4 py-2 text-[13px] font-semibold transition-colors duration-300 ease-out ${
+              active ? "text-ink" : "text-quiet hover:text-muted"
             }`}
           >
             <Icon className="h-4 w-4" />
@@ -248,33 +293,70 @@ function AgendaTabs({
   upcomingCount: number;
   pastCount: number;
 }) {
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<Partial<Record<View, HTMLButtonElement | null>>>({});
+  const [indicator, setIndicator] = useState({ left: 0, width: 0, ready: false });
   const options = [
     { value: "Upcoming" as const, count: upcomingCount },
     { value: "Past" as const, count: pastCount },
   ];
 
+  useLayoutEffect(() => {
+    const updateIndicator = () => {
+      const container = tabsRef.current;
+      const tab = tabRefs.current[value];
+      if (!container || !tab) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const tabRect = tab.getBoundingClientRect();
+      setIndicator({
+        left: tabRect.left - containerRect.left,
+        width: tabRect.width,
+        ready: true,
+      });
+    };
+
+    updateIndicator();
+    const observer = new ResizeObserver(updateIndicator);
+    if (tabsRef.current) observer.observe(tabsRef.current);
+    return () => observer.disconnect();
+  }, [value]);
+
   return (
     <div
-      className="flex items-center gap-7"
+      ref={tabsRef}
+      className="relative flex items-center gap-7"
       role="tablist"
       aria-label="Agenda timeframe"
     >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute bottom-0 left-0 h-0.5 rounded-full bg-accent transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{
+          width: indicator.width,
+          opacity: indicator.ready ? 1 : 0,
+          transform: `translate3d(${indicator.left}px, 0, 0)`,
+        }}
+      />
       {options.map((option) => {
         const active = value === option.value;
         return (
           <button
             key={option.value}
+            ref={(node) => {
+              tabRefs.current[option.value] = node;
+            }}
             type="button"
             role="tab"
             aria-selected={active}
             onClick={() => onChange(option.value)}
-            className={`relative flex items-center gap-2 pb-3 text-[13px] font-semibold transition-colors ${
+            className={`relative flex items-center gap-2 pb-3 text-[13px] font-semibold transition-colors duration-300 ease-out ${
               active ? "text-ink" : "text-quiet hover:text-muted"
             }`}
           >
             {option.value}
             <span
-              className={`rounded-full px-2 py-0.5 text-[10.5px] tabular-nums ${
+                className={`rounded-full px-2 py-0.5 text-[10.5px] tabular-nums transition-colors duration-300 ease-out ${
                 active
                   ? "bg-accent/10 text-accent"
                   : "bg-black/[0.035] text-dim"
@@ -282,9 +364,6 @@ function AgendaTabs({
             >
               {option.count}
             </span>
-            {active && (
-              <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-accent" />
-            )}
           </button>
         );
       })}

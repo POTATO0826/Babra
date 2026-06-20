@@ -8,7 +8,7 @@ export function ClientCard({ client }: { client: Client }) {
   return (
     <Link
       href={`/clients/${client.slug}`}
-      className="glass-card flex flex-col gap-4 rounded-2xl border p-[22px] transition-all hover:-translate-y-0.5"
+      className="glass-card glass-interactive flex flex-col gap-4 rounded-2xl border p-[22px]"
     >
       <div className="flex items-center gap-3.5">
         <Avatar name={client.name} size={50} fontSize={16} />

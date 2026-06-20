@@ -24,7 +24,7 @@ export function MeetingRow({
     <button
       type="button"
       onClick={() => onSelect(meeting)}
-      className="relative flex w-full items-center gap-5 px-[22px] py-[18px] text-left transition-colors hover:bg-[#F8F4EC]"
+      className="glass-row relative flex w-full items-center gap-5 px-[22px] py-[18px] text-left"
       style={{ borderTop: first ? "none" : "1px solid #ECE6D9" }}
     >
       {isNext && (
