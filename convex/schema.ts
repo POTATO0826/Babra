@@ -77,6 +77,14 @@ const conversationAnalysisStatus = v.union(
   v.literal("Failed"),
 );
 
+const newsTargetType = v.union(v.literal("Client"), v.literal("Lead"));
+
+const newsRunStatus = v.union(
+  v.literal("Running"),
+  v.literal("Completed"),
+  v.literal("Failed"),
+);
+
 const isoDate = v.string();
 const isoDateTime = v.string();
 
@@ -346,4 +354,56 @@ export default defineSchema({
     .index("by_client", ["clientId"])
     .index("by_lead", ["leadId"])
     .index("by_due_date", ["dueDate"]),
+
+  // Raw news headlines scraped from Sin Chew via Apify, enriched with an
+  // English title/category and (lazily, when an article is deep-read) a cached
+  // body + English summary so we never re-fetch the same URL within a refresh.
+  newsArticles: defineTable({
+    url: v.string(),
+    title: v.string(),
+    englishTitle: v.optional(v.string()),
+    category: v.optional(v.string()),
+    source: v.string(),
+    summary: v.optional(v.string()),
+    bodyText: v.optional(v.string()),
+    scrapedAt: v.optional(isoDateTime),
+    fetchedAt: v.optional(isoDateTime),
+    createdAt: isoDateTime,
+    updatedAt: isoDateTime,
+  }).index("by_url", ["url"]),
+
+  // AI-generated, per-person talking points matching a news article to a
+  // specific client or lead.
+  topicSuggestions: defineTable({
+    runId: v.optional(v.id("newsRuns")),
+    targetType: newsTargetType,
+    clientId: v.optional(v.id("clients")),
+    leadId: v.optional(v.id("leads")),
+    targetName: v.string(),
+    targetSlug: v.optional(v.string()),
+    targetOccupation: v.optional(v.string()),
+    articleUrl: v.string(),
+    headline: v.string(),
+    source: v.string(),
+    summary: v.string(),
+    whyRelevant: v.string(),
+    talkingPoints: v.array(v.string()),
+    relevanceScore: v.number(),
+    createdAt: isoDateTime,
+  })
+    .index("by_target_type", ["targetType"])
+    .index("by_client", ["clientId"])
+    .index("by_lead", ["leadId"])
+    .index("by_run", ["runId"]),
+
+  // One row per "Refresh news" run so the UI can show running / done / failed.
+  newsRuns: defineTable({
+    status: newsRunStatus,
+    startedAt: isoDateTime,
+    completedAt: v.optional(isoDateTime),
+    articlesFetched: v.optional(v.number()),
+    suggestionsCreated: v.optional(v.number()),
+    peopleConsidered: v.optional(v.number()),
+    error: v.optional(v.string()),
+  }).index("by_status", ["status"]),
 });

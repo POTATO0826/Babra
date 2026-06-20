@@ -11,6 +11,8 @@
 import type * as conversationAgent from "../conversationAgent.js";
 import type * as conversationAgentActions from "../conversationAgentActions.js";
 import type * as crm from "../crm.js";
+import type * as news from "../news.js";
+import type * as newsActions from "../newsActions.js";
 import type * as seed from "../seed.js";
 import type * as whatsapp from "../whatsapp.js";
 
@@ -24,6 +26,8 @@ declare const fullApi: ApiFromModules<{
   conversationAgent: typeof conversationAgent;
   conversationAgentActions: typeof conversationAgentActions;
   crm: typeof crm;
+  news: typeof news;
+  newsActions: typeof newsActions;
   seed: typeof seed;
   whatsapp: typeof whatsapp;
 }>;

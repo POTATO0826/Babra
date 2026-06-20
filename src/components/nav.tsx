@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   CalendarIcon,
   ClientsIcon,
+  RadarIcon,
   UsersIcon,
 } from "@/components/icons";
 
@@ -32,6 +33,14 @@ const links = [
     icon: ClientsIcon,
     accent: "#9C3B33",
     tint: "rgba(156,59,51,0.10)",
+  },
+  {
+    href: "/news",
+    label: "News Radar",
+    sub: "Talking points",
+    icon: RadarIcon,
+    accent: "#B5832E",
+    tint: "rgba(181,131,46,0.12)",
   },
 ];
 

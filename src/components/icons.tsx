@@ -120,6 +120,17 @@ export function AgendaIcon({ className }: IconProps) {
   );
 }
 
+export function RadarIcon({ className }: IconProps) {
+  return (
+    <svg {...base(className)} strokeWidth={1.6}>
+      <path d="M19.07 4.93A10 10 0 1 0 21 12" />
+      <path d="M15.5 8.5A5 5 0 1 0 17 12" />
+      <path d="M12 12 19 5" />
+      <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function ClientsIcon({ className }: IconProps) {
   return (
     <svg {...base(className)} strokeWidth={1.6}>
