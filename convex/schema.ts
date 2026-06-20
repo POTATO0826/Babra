@@ -70,6 +70,13 @@ const meetingStatus = v.union(
   v.literal("Canceled"),
 );
 
+const conversationAnalysisStatus = v.union(
+  v.literal("Idle"),
+  v.literal("Queued"),
+  v.literal("Running"),
+  v.literal("Failed"),
+);
+
 const isoDate = v.string();
 const isoDateTime = v.string();
 
@@ -212,6 +219,11 @@ export default defineSchema({
     clientId: v.optional(v.id("clients")),
     status: v.union(v.literal("Open"), v.literal("Archived")),
     lastMessageAt: v.optional(isoDateTime),
+    analysisStatus: v.optional(conversationAnalysisStatus),
+    analysisRequestedAt: v.optional(isoDateTime),
+    analysisStartedAt: v.optional(isoDateTime),
+    analysisCompletedAt: v.optional(isoDateTime),
+    analysisError: v.optional(v.string()),
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
   })
@@ -240,6 +252,7 @@ export default defineSchema({
     rawPayload: v.any(),
     analysisStatus: v.union(
       v.literal("Pending"),
+      v.literal("Processing"),
       v.literal("Processed"),
       v.literal("Failed"),
     ),

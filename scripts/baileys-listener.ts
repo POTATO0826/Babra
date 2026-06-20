@@ -6,24 +6,8 @@ import makeWASocket, {
   useMultiFileAuthState,
   type WAMessage,
 } from "@whiskeysockets/baileys";
-import { ConvexHttpClient } from "convex/browser";
-import { makeFunctionReference } from "convex/server";
 import pino from "pino";
 import qrcode from "qrcode-terminal";
-
-const receiveMessage = makeFunctionReference<
-  "mutation",
-  {
-    providerMessageId: string;
-    fromPhone: string;
-    toPhone: string;
-    senderName?: string;
-    body: string;
-    receivedAt: string;
-    rawPayload: unknown;
-  },
-  { messageId: string; conversationId: string }
->("whatsapp:receiveMessageForMvpAdvisor");
 
 const log = pino({
   level: process.env.BAILEYS_LOG_LEVEL ?? "info",
@@ -31,13 +15,12 @@ const log = pino({
 const plainLogPrefix = "[baileys-listener]";
 
 const authDir = process.env.BAILEYS_AUTH_DIR ?? ".baileys-auth";
-const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+const internalBaseUrl = process.env.NEXT_INTERNAL_BASE_URL ?? "http://localhost:3000";
+const internalIngestSecret = process.env.INTERNAL_INGEST_SECRET;
 
-if (!convexUrl) {
-  throw new Error("NEXT_PUBLIC_CONVEX_URL is required to store Baileys messages.");
+if (!internalIngestSecret) {
+  throw new Error("INTERNAL_INGEST_SECRET is required for the Baileys listener.");
 }
-
-const convex = new ConvexHttpClient(convexUrl);
 
 async function start() {
   // Baileys names this helper like a React hook, but this is a Node worker.
@@ -131,9 +114,11 @@ async function storeInboundMessage(message: WAMessage) {
 
   const providerMessageId =
     message.key.id ?? `${remoteJid}-${message.messageTimestamp?.toString()}`;
-  const fromPhone = jidToPhone(remoteJid);
+  const fromPhone = jidToPhone(preferPhoneJid(message.key.remoteJidAlt, remoteJid));
   const toPhone =
-    message.key.participant ? jidToPhone(message.key.participant) : "baileys-device";
+    message.key.participant || message.key.participantAlt
+      ? jidToPhone(preferPhoneJid(message.key.participantAlt, message.key.participant))
+      : "baileys-device";
   const receivedAt = timestampToIso(message.messageTimestamp);
 
   log.info(
@@ -152,7 +137,7 @@ async function storeInboundMessage(message: WAMessage) {
     receivedAt,
   });
 
-  const result = await convex.mutation(receiveMessage, {
+  const payload = {
     providerMessageId,
     fromPhone,
     toPhone,
@@ -163,9 +148,31 @@ async function storeInboundMessage(message: WAMessage) {
       messageTimestamp: message.messageTimestamp?.toString(),
       pushName: message.pushName,
       contentType: getContentType(message.message),
+      remoteJid,
+      remoteJidAlt: message.key.remoteJidAlt,
+      participant: message.key.participant,
+      participantAlt: message.key.participantAlt,
     },
     ...(message.pushName ? { senderName: message.pushName } : {}),
+  };
+
+  const response = await fetch(`${internalBaseUrl}/api/internal/whatsapp/message`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${internalIngestSecret}`,
+    },
+    body: JSON.stringify(payload),
   });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Internal WhatsApp ingest failed: ${response.status} ${errorText}`,
+    );
+  }
+
+  const result = (await response.json()) as unknown;
 
   log.info({ providerMessageId, result }, "Stored inbound Baileys message");
   console.info(plainLogPrefix, "stored inbound message", {
@@ -193,6 +200,14 @@ function extractText(message: WAMessage) {
 
 function jidToPhone(jid: string) {
   return jid.split("@")[0].split(":")[0];
+}
+
+function preferPhoneJid(...jids: Array<string | null | undefined>) {
+  return (
+    jids.find((jid) => jid?.endsWith("@s.whatsapp.net")) ??
+    jids.find((jid): jid is string => Boolean(jid)) ??
+    ""
+  );
 }
 
 function timestampToIso(timestamp: WAMessage["messageTimestamp"]) {

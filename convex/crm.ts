@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { queryGeneric as query } from "convex/server";
+import { query } from "./_generated/server";
 
 const leadStatus = v.union(
   v.literal("New"),
@@ -19,14 +19,15 @@ export const listLeads = query({
     status: v.optional(leadStatus),
   },
   handler: async (ctx, args) => {
-    if (args.status) {
+    const status = args.status;
+    if (status) {
       return await ctx.db
         .query("leads")
-        .withIndex("by_status", (q) => q.eq("status", args.status))
-        .collect();
+        .withIndex("by_status", (q) => q.eq("status", status))
+        .take(100);
     }
 
-    return await ctx.db.query("leads").collect();
+    return await ctx.db.query("leads").order("desc").take(100);
   },
 });
 
@@ -35,14 +36,15 @@ export const listClients = query({
     status: v.optional(clientStatus),
   },
   handler: async (ctx, args) => {
-    if (args.status) {
+    const status = args.status;
+    if (status) {
       return await ctx.db
         .query("clients")
-        .withIndex("by_status", (q) => q.eq("status", args.status))
-        .collect();
+        .withIndex("by_status", (q) => q.eq("status", status))
+        .take(100);
     }
 
-    return await ctx.db.query("clients").collect();
+    return await ctx.db.query("clients").order("desc").take(100);
   },
 });
 
@@ -61,6 +63,6 @@ export const getClientBySlug = query({
 export const listMeetings = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("meetings").withIndex("by_start").collect();
+    return await ctx.db.query("meetings").withIndex("by_start").take(100);
   },
 });

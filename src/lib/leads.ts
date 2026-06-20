@@ -13,7 +13,8 @@ export type LeadSource =
   | "Website"
   | "Seminar"
   | "LinkedIn"
-  | "Cold Inquiry";
+  | "Cold Inquiry"
+  | "WhatsApp";
 
 export type TimelineEvent = {
   date: string; // ISO date

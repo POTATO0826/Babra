@@ -8,7 +8,13 @@ import { LeadDrawer } from "./lead-drawer";
 
 type Filter = "All" | LeadStatus;
 
-export function LeadsBoard({ leads }: { leads: Lead[] }) {
+export function LeadsBoard({
+  leads,
+  isLoading = false,
+}: {
+  leads: Lead[];
+  isLoading?: boolean;
+}) {
   const [selected, setSelected] = useState<Lead | null>(null);
   const [filter, setFilter] = useState<Filter>("All");
   const filterBarRef = useRef<HTMLDivElement>(null);
@@ -124,7 +130,16 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
         })}
       </div>
 
-      {visible.length === 0 ? (
+      {isLoading ? (
+        <div className="px-5 py-20 text-center text-quiet">
+          <div className="mb-2 font-serif text-[21px] text-muted">
+            Loading leads
+          </div>
+          <div className="text-sm">
+            Syncing the latest pipeline from Convex.
+          </div>
+        </div>
+      ) : visible.length === 0 ? (
         <div className="px-5 py-20 text-center text-quiet">
           <div className="mb-2 font-serif text-[21px] text-muted">
             No leads in this stage
