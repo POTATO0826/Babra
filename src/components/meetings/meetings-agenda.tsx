@@ -1,12 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import type { Meeting } from "@/lib/meetings";
 import { dayKey, formatDayLabel, formatLongDate } from "@/lib/format";
+import {
+  getCreatedMeetingsServerSnapshot,
+  loadCreatedMeetings,
+  subscribeToCreatedMeetings,
+} from "@/lib/meeting-storage";
 import { MeetingRow } from "./meeting-row";
 import { MeetingDrawer } from "./meeting-drawer";
 import { MeetingsCalendar } from "./meetings-calendar";
-import { AgendaIcon, CalendarIcon } from "@/components/icons";
+import { AgendaIcon, CalendarIcon, Plus } from "@/components/icons";
 
 type Layout = "Agenda" | "Calendar";
 type View = "Upcoming" | "Past";
@@ -18,7 +24,21 @@ type DayGroup = {
   meetings: Meeting[];
 };
 
-export function MeetingsAgenda({ meetings }: { meetings: Meeting[] }) {
+export function MeetingsAgenda({ meetings: initialMeetings }: { meetings: Meeting[] }) {
+  const createdMeetings = useSyncExternalStore(
+    subscribeToCreatedMeetings,
+    loadCreatedMeetings,
+    getCreatedMeetingsServerSnapshot
+  );
+  const meetings = useMemo(
+    () => [
+      ...createdMeetings,
+      ...initialMeetings.filter(
+        (meeting) => !createdMeetings.some((item) => item.id === meeting.id)
+      ),
+    ],
+    [createdMeetings, initialMeetings]
+  );
   const [selected, setSelected] = useState<Meeting | null>(null);
   const [layout, setLayout] = useState<Layout>("Agenda");
   const [view, setView] = useState<View>("Upcoming");
@@ -94,8 +114,30 @@ export function MeetingsAgenda({ meetings }: { meetings: Meeting[] }) {
           </p>
         </div>
 
-        <LayoutSwitch value={layout} onChange={setLayout} />
+        <Link
+          href="/meetings/new"
+          className="relative inline-flex items-center gap-2 rounded-xl bg-[#231F17] px-4 py-[10px] text-[13px] font-semibold text-[#F8F4EC] shadow-[0_12px_22px_-15px_rgba(35,31,23,0.6)] transition hover:-translate-y-0.5"
+        >
+          <Plus className="h-4 w-4" />
+          New meeting
+        </Link>
       </header>
+
+      <div className="mb-7 flex min-h-[45px] items-start justify-between gap-6 border-b border-line">
+        {layout === "Agenda" ? (
+          <AgendaTabs
+            value={view}
+            onChange={setView}
+            upcomingCount={upcomingCount}
+            pastCount={pastCount}
+          />
+        ) : (
+          <div className="pb-3 text-[12.5px] font-semibold text-quiet">
+            Monthly overview
+          </div>
+        )}
+        <LayoutSwitch value={layout} onChange={setLayout} />
+      </div>
 
       {layout === "Calendar" ? (
         <MeetingsCalendar
@@ -105,13 +147,6 @@ export function MeetingsAgenda({ meetings }: { meetings: Meeting[] }) {
         />
       ) : (
         <>
-          <AgendaTabs
-            value={view}
-            onChange={setView}
-            upcomingCount={upcomingCount}
-            pastCount={pastCount}
-          />
-
           {groups.length === 0 ? (
             <div className="px-5 py-20 text-center text-quiet">
               <div className="mb-2 font-serif text-[21px] text-muted">
@@ -175,7 +210,7 @@ function LayoutSwitch({
 
   return (
     <div
-      className="glass-card relative flex rounded-[13px] border p-1"
+      className="glass-card relative -mt-1 flex rounded-[13px] border p-1"
       aria-label="Meeting layout"
     >
       {options.map((option) => {
@@ -220,7 +255,7 @@ function AgendaTabs({
 
   return (
     <div
-      className="mb-7 flex items-center gap-7 border-b border-line"
+      className="flex items-center gap-7"
       role="tablist"
       aria-label="Agenda timeframe"
     >

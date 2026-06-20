@@ -82,6 +82,14 @@ export function Check({ className }: IconProps) {
   );
 }
 
+export function Plus({ className }: IconProps) {
+  return (
+    <svg {...base(className)} strokeWidth={2}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
 export function UsersIcon({ className }: IconProps) {
   return (
     <svg {...base(className)} strokeWidth={1.6}>
