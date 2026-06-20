@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Hanken_Grotesk, Newsreader } from "next/font/google";
+import { ConvexClientProvider } from "@/components/providers/convex-client-provider";
 import "./globals.css";
 
 const hanken = Hanken_Grotesk({
@@ -29,7 +30,9 @@ export default function RootLayout({
       lang="en"
       className={`${hanken.variable} ${newsreader.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-paper text-ink-soft">{children}</body>
+      <body className="min-h-full bg-paper text-ink-soft">
+        <ConvexClientProvider>{children}</ConvexClientProvider>
+      </body>
     </html>
   );
 }

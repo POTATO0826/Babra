@@ -114,9 +114,11 @@ async function storeInboundMessage(message: WAMessage) {
 
   const providerMessageId =
     message.key.id ?? `${remoteJid}-${message.messageTimestamp?.toString()}`;
-  const fromPhone = jidToPhone(remoteJid);
+  const fromPhone = jidToPhone(preferPhoneJid(message.key.remoteJidAlt, remoteJid));
   const toPhone =
-    message.key.participant ? jidToPhone(message.key.participant) : "baileys-device";
+    message.key.participant || message.key.participantAlt
+      ? jidToPhone(preferPhoneJid(message.key.participantAlt, message.key.participant))
+      : "baileys-device";
   const receivedAt = timestampToIso(message.messageTimestamp);
 
   log.info(
@@ -146,6 +148,10 @@ async function storeInboundMessage(message: WAMessage) {
       messageTimestamp: message.messageTimestamp?.toString(),
       pushName: message.pushName,
       contentType: getContentType(message.message),
+      remoteJid,
+      remoteJidAlt: message.key.remoteJidAlt,
+      participant: message.key.participant,
+      participantAlt: message.key.participantAlt,
     },
     ...(message.pushName ? { senderName: message.pushName } : {}),
   };
@@ -194,6 +200,14 @@ function extractText(message: WAMessage) {
 
 function jidToPhone(jid: string) {
   return jid.split("@")[0].split(":")[0];
+}
+
+function preferPhoneJid(...jids: Array<string | null | undefined>) {
+  return (
+    jids.find((jid) => jid?.endsWith("@s.whatsapp.net")) ??
+    jids.find((jid): jid is string => Boolean(jid)) ??
+    ""
+  );
 }
 
 function timestampToIso(timestamp: WAMessage["messageTimestamp"]) {
