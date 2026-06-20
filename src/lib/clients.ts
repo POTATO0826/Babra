@@ -427,22 +427,3 @@ export const clients: Client[] = [
 export function getClient(slug: string): Client | undefined {
   return clients.find((c) => c.slug === slug);
 }
-
-/** Tailwind classes for a client status badge. */
-export const CLIENT_STATUS_STYLES: Record<ClientStatus, string> = {
-  Active:
-    "bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/30",
-  Onboarding:
-    "bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/30",
-  "Review due":
-    "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/30",
-};
-
-/** Color for each allocation slice (bar + legend). */
-export const ALLOCATION_COLORS: Record<AllocationSlice["label"], string> = {
-  Stocks: "bg-indigo-500",
-  Bonds: "bg-sky-500",
-  Cash: "bg-zinc-400",
-  Alternatives: "bg-violet-500",
-  "Real Estate": "bg-emerald-500",
-};

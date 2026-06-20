@@ -1,4 +1,5 @@
 import { Nav } from "@/components/nav";
+import { InkBackground } from "@/components/backdrop/ink-background";
 
 export default function AppLayout({
   children,
@@ -6,18 +7,19 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex h-screen overflow-hidden bg-[#06070b]">
-      {/* Ambient obsidian glow */}
+    <div className="relative flex h-screen overflow-hidden">
+      <InkBackground />
+
+      {/* Faint paper grain over everything */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-70"
-        style={{
-          background:
-            "radial-gradient(60% 50% at 15% 0%, rgba(60,80,160,0.16), transparent 70%), radial-gradient(50% 50% at 100% 100%, rgba(40,120,140,0.12), transparent 70%)",
-        }}
+        className="paper-grain pointer-events-none fixed inset-0 z-[60] opacity-[0.035] mix-blend-multiply"
       />
+
       <Nav />
-      <main className="relative z-10 flex-1 overflow-y-auto">{children}</main>
+      <main className="relative z-[1] h-screen flex-1 overflow-y-auto">
+        {children}
+      </main>
     </div>
   );
 }

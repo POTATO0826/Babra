@@ -1,76 +1,53 @@
 import type { Lead } from "@/lib/leads";
-import {
-  STATUS_STYLES,
-  avatarGradient,
-  formatRelative,
-  initials,
-} from "@/lib/format";
+import { formatCurrency, formatRelative } from "@/lib/format";
+import { StatusPill, Avatar } from "@/components/ui";
 
 export function LeadCard({
   lead,
-  selected,
   onSelect,
 }: {
   lead: Lead;
-  selected: boolean;
   onSelect: (lead: Lead) => void;
 }) {
   return (
     <button
       type="button"
       onClick={() => onSelect(lead)}
-      aria-pressed={selected}
-      className={`group flex h-full flex-col rounded-xl border bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:bg-zinc-900 ${
-        selected
-          ? "border-indigo-400 ring-2 ring-indigo-400/40 dark:border-indigo-500"
-          : "border-zinc-200 dark:border-zinc-800"
-      }`}
+      className="flex flex-col gap-3.5 rounded-2xl border border-hair bg-panel p-5 text-left shadow-[0_1px_2px_rgba(38,34,25,0.03),0_14px_30px_-26px_rgba(38,34,25,0.25)] transition-all hover:-translate-y-0.5 hover:border-[#CFC7B5]"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white ${avatarGradient(
-              lead.name
-            )}`}
-          >
-            {initials(lead.name)}
-          </div>
-          <div className="min-w-0">
-            <p className="truncate font-semibold text-zinc-900 dark:text-zinc-50">
-              {lead.name}
-            </p>
-            <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-              {lead.occupation}
-            </p>
-          </div>
-        </div>
-        <span
-          className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${
-            STATUS_STYLES[lead.status]
-          }`}
-        >
-          {lead.status}
+      <div className="flex items-start gap-3.5">
+        <Avatar name={lead.name} size={44} />
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="text-base font-semibold text-ink-soft">
+            {lead.name}
+          </span>
+          <span className="text-[12.5px] text-faint">{lead.occupation}</span>
+        </span>
+        <StatusPill status={lead.status} />
+      </div>
+
+      <div className="flex items-baseline justify-between gap-2.5 pb-1 pt-0.5">
+        <span className="font-serif text-[25px] font-medium tabular-nums tracking-[-0.01em] text-[#231F17]">
+          {formatCurrency(lead.estimatedPortfolio)}
+        </span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-dim">
+          Est. portfolio
         </span>
       </div>
 
-      <p className="mt-4 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-300">
+      <p className="m-0 line-clamp-2 text-[13px] leading-[1.55] text-muted">
         {lead.situationTeaser}
       </p>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <span className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+      <div className="flex items-center gap-2.5 border-t border-line-soft pt-3 text-[11.5px] text-quiet">
+        <span className="inline-flex items-center gap-1.5 font-semibold text-[#5C6E86]">
+          <span className="h-[5px] w-[5px] rounded-full bg-accent" />
           {lead.serviceInterest}
         </span>
-        <span className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-          {lead.source}
-        </span>
-      </div>
-
-      <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-        <span>Last contact {formatRelative(lead.lastContact)}</span>
-        <span className="text-indigo-600 opacity-0 transition-opacity group-hover:opacity-100 dark:text-indigo-400">
-          View →
-        </span>
+        <span className="text-[#D8D1C2]">·</span>
+        <span>{lead.source}</span>
+        <span className="flex-1" />
+        <span>Added {formatRelative(lead.addedDate)}</span>
       </div>
     </button>
   );

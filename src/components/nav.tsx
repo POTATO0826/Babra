@@ -2,131 +2,152 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { leads } from "@/lib/leads";
+import { clients } from "@/lib/clients";
+import { meetings } from "@/lib/meetings";
+import {
+  CalendarIcon,
+  ClientsIcon,
+  UsersIcon,
+} from "@/components/icons";
+
+const upcomingCount = meetings.filter(
+  (m) => new Date(m.start).getTime() >= Date.now()
+).length;
 
 const links = [
-  { href: "/leads", label: "Leads", glyph: "引", icon: UsersIcon },
-  { href: "/meetings", label: "Meetings", glyph: "会", icon: CalendarIcon },
-  { href: "/clients", label: "Client Profiles", glyph: "客", icon: IdIcon },
+  {
+    href: "/leads",
+    label: "Leads",
+    sub: "Pipeline",
+    icon: UsersIcon,
+    accent: "#34548C",
+    tint: "rgba(52,84,140,0.10)",
+    count: leads.length,
+  },
+  {
+    href: "/meetings",
+    label: "Meetings",
+    sub: "Schedule",
+    icon: CalendarIcon,
+    accent: "#566F4F",
+    tint: "rgba(86,111,79,0.12)",
+    count: upcomingCount,
+  },
+  {
+    href: "/clients",
+    label: "Client Profiles",
+    sub: "Active book",
+    icon: ClientsIcon,
+    accent: "#9C3B33",
+    tint: "rgba(156,59,51,0.10)",
+    count: clients.length,
+  },
 ];
 
 export function Nav() {
   const pathname = usePathname();
 
   return (
-    <aside className="z-20 flex w-64 shrink-0 flex-col px-4 py-6">
-      <div className="glass flex h-full flex-col rounded-2xl px-3 py-5">
-        {/* Brand */}
-        <Link href="/" className="group flex items-center gap-3 px-2">
-          <span className="glass-tile flex h-9 w-9 items-center justify-center rounded-xl font-display text-lg text-white/90 shadow-[0_0_20px_-4px_rgba(120,150,255,0.5)]">
-            墨
-          </span>
-          <span className="font-display text-lg tracking-wide text-white/90">
+    <aside className="relative z-[2] flex h-screen w-64 flex-none flex-col overflow-hidden border-r border-line bg-sidebar">
+      {/* Editorial corner wash */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-[50px] -top-[60px] h-60 w-[280px] opacity-[0.55] blur-[26px]"
+        style={{
+          background:
+            "radial-gradient(55% 70% at 30% 25%, rgba(52,84,140,0.30), transparent 70%), radial-gradient(50% 60% at 72% 48%, rgba(156,59,51,0.14), transparent 72%), radial-gradient(45% 55% at 45% 75%, rgba(52,84,140,0.16), transparent 70%)",
+        }}
+      />
+
+      <div className="relative px-[26px] pb-[22px] pt-[30px]">
+        <Link href="/" className="flex items-baseline gap-2.5">
+          <span className="font-serif text-[25px] font-medium tracking-[0.16em] text-[#231F17]">
             MEETU
           </span>
+          <span className="inline-block h-1.5 w-1.5 -translate-y-[3px] rounded-full bg-accent" />
         </Link>
-
-        <nav className="mt-8 flex flex-col gap-1.5">
-          {links.map(({ href, label, glyph, icon: Icon }) => {
-            const active = pathname === href || pathname.startsWith(`${href}/`);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`group relative flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm transition-all ${
-                  active
-                    ? "glass-tile text-white shadow-[0_0_24px_-8px_rgba(120,150,255,0.7)]"
-                    : "text-white/55 hover:bg-white/[0.04] hover:text-white/90"
-                }`}
-              >
-                <span
-                  className={`relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
-                    active
-                      ? "bg-white/[0.07] text-indigo-200"
-                      : "bg-white/[0.03] text-white/60 group-hover:text-white/90"
-                  }`}
-                >
-                  <Icon className="h-[18px] w-[18px]" />
-                  <span className="pointer-events-none absolute -right-0.5 -top-0.5 font-display text-[9px] leading-none text-white/30">
-                    {glyph}
-                  </span>
-                </span>
-                <span className="font-medium tracking-wide">{label}</span>
-                {active && (
-                  <span className="absolute right-2 h-1.5 w-1.5 rounded-full bg-indigo-300 shadow-[0_0_8px_2px_rgba(160,180,255,0.6)]" />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="mt-auto flex items-center gap-3 border-t border-white/10 px-1 pt-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400/80 to-violet-500/80 text-xs font-semibold text-white">
-            FA
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-white/85">
-              Financial Advisor
-            </p>
-            <p className="truncate text-xs text-white/40">Your workspace</p>
-          </div>
+        <div className="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.22em] text-dim">
+          Advisor workspace
         </div>
       </div>
+
+      <nav className="relative flex flex-col gap-1.5 px-3.5 py-2.5">
+        <div className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-ghost">
+          Workspace
+        </div>
+        {links.map(({ href, label, sub, icon: Icon, accent, tint, count }) => {
+          const active = pathname === href || pathname.startsWith(`${href}/`);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className="group relative flex items-center gap-3 rounded-[13px] border px-[11px] py-2.5 transition-colors"
+              style={{
+                background: active ? tint : "transparent",
+                borderColor: active ? "rgba(0,0,0,0.04)" : "transparent",
+              }}
+            >
+              {active && (
+                <span
+                  className="absolute -left-3.5 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-[3px]"
+                  style={{ background: accent }}
+                />
+              )}
+              <span
+                className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-[10px] border transition-colors"
+                style={{
+                  background: active ? accent : "#F1ECE1",
+                  borderColor: active ? accent : "#E5DFD1",
+                  color: active ? "#F4F0E6" : "#8A8170",
+                }}
+              >
+                <Icon className="h-[18px] w-[18px]" />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-px">
+                <span
+                  className="text-sm tracking-[0.005em]"
+                  style={{
+                    color: active ? "#231F17" : "#5C5446",
+                    fontWeight: active ? 600 : 500,
+                  }}
+                >
+                  {label}
+                </span>
+                <span
+                  className="text-[11px] font-semibold tracking-[0.04em]"
+                  style={{ color: active ? accent : "#A8A08D" }}
+                >
+                  {sub}
+                </span>
+              </span>
+              <span
+                className="flex h-5 min-w-[22px] flex-none items-center justify-center rounded-[7px] px-[7px] text-[11.5px] font-bold tabular-nums"
+                style={{
+                  background: active ? accent : "#EEE8DB",
+                  color: active ? "#F4F0E6" : "#9B927F",
+                }}
+              >
+                {count}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="flex-1" />
+
+      <div className="relative m-4 flex items-center gap-[11px] rounded-[13px] border border-hair bg-panel p-3.5">
+        <span className="flex h-[38px] w-[38px] flex-none items-center justify-center rounded-full text-[13px] font-semibold tracking-[0.02em] text-[#F4F0E6] [background:linear-gradient(140deg,#3F5681,#717FA3)]">
+          FA
+        </span>
+        <span className="flex min-w-0 flex-col">
+          <span className="text-[13px] font-semibold text-ink-soft">
+            Financial Advisor
+          </span>
+          <span className="text-[11.5px] text-quiet">Your workspace</span>
+        </span>
+      </div>
     </aside>
-  );
-}
-
-function UsersIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.7}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
-function CalendarIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.7}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
-}
-
-function IdIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.7}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <circle cx="9" cy="11" r="2" />
-      <path d="M13 9h5M13 13h3M5 16h8" />
-    </svg>
   );
 }

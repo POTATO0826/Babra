@@ -1,18 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { clients, getClient, CLIENT_STATUS_STYLES } from "@/lib/clients";
+import { clients, getClient } from "@/lib/clients";
 import { meetings } from "@/lib/meetings";
 import {
-  MODE_STYLES,
-  avatarGradient,
   formatCurrency,
+  formatCurrencyFull,
   formatDate,
   formatDayLabel,
-  formatTime,
-  initials,
+  statusMeta,
 } from "@/lib/format";
 import { AllocationBar } from "@/components/clients/allocation-bar";
-import { ModeIcon } from "@/components/meetings/mode-icon";
+import { Avatar, StatusPill } from "@/components/ui";
+import { ArrowLeft, Mail, Phone } from "@/components/icons";
 
 export function generateStaticParams() {
   return clients.map((c) => ({ slug: c.slug }));
@@ -29,130 +28,123 @@ export default async function ClientProfilePage(
     .filter((m) => m.attendee === client.name)
     .sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime());
 
+  const tel = client.phone.replace(/[^\d+]/g, "");
+
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
+    <section className="mx-auto max-w-[1080px] px-14 pb-24 pt-9">
       <Link
         href="/clients"
-        className="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+        className="mb-[22px] inline-flex items-center gap-2 py-1.5 text-[13px] font-semibold text-faint transition-colors hover:text-muted"
       >
-        <svg
-          className="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-        >
-          <path d="m15 18-6-6 6-6" />
-        </svg>
+        <ArrowLeft className="h-4 w-4" />
         Back to clients
       </Link>
 
       {/* Header */}
-      <header className="mt-4 flex flex-wrap items-start justify-between gap-6 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="flex items-center gap-4">
-          <div
-            className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-xl font-semibold text-white ${avatarGradient(
-              client.name
-            )}`}
-          >
-            {initials(client.name)}
-          </div>
+      <header className="relative mb-[30px] flex items-start justify-between gap-[30px] overflow-hidden border-b border-line pb-[30px]">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-[30px] -top-[100px] h-[230px] w-80 opacity-50 blur-[32px]"
+          style={{
+            background:
+              "radial-gradient(55% 70% at 70% 30%, rgba(52,84,140,0.22), transparent 70%), radial-gradient(45% 55% at 38% 62%, rgba(156,59,51,0.14), transparent 72%)",
+          }}
+        />
+        <div className="relative flex items-center gap-[22px]">
+          <Avatar name={client.name} size={84} fontSize={28} className="font-serif" />
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+            <div className="flex items-center gap-3">
+              <h1 className="m-0 font-serif text-[34px] font-medium leading-none tracking-[-0.01em] text-[#231F17]">
                 {client.name}
               </h1>
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${
-                  CLIENT_STATUS_STYLES[client.status]
-                }`}
-              >
-                {client.status}
-              </span>
+              <StatusPill status={client.status} />
             </div>
-            <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="mt-[11px] text-[14.5px] text-muted">
               {client.occupation} · {client.age} · {client.location}
             </p>
           </div>
         </div>
-
-        <dl className="flex gap-8">
-          <Stat label="AUM" value={formatCurrency(client.aum)} />
-          <Stat label="Net worth" value={formatCurrency(client.netWorth)} />
-          <Stat label="Client since" value={formatDate(client.clientSince)} />
-        </dl>
       </header>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {/* Headline stats */}
+      <div className="mb-[34px] flex gap-6 rounded-2xl border border-hair bg-panel px-[26px] py-[22px]">
+        <Stat label="Assets under mgmt" value={formatCurrency(client.aum)} first />
+        <Stat label="Net worth" value={formatCurrency(client.netWorth)} />
+        <Stat label="Client since" value={formatDate(client.clientSince)} />
+      </div>
+
+      <div className="grid grid-cols-[1fr_320px] items-start gap-6">
         {/* Main column */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="flex min-w-0 flex-col gap-5">
           <Card title="Situation">
-            <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+            <p className="m-0 text-[14.5px] leading-[1.65] text-body">
               {client.description}
             </p>
-            <p className="mt-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+            <p className="mt-3.5 text-sm leading-[1.65] text-muted">
               {client.situation}
             </p>
           </Card>
 
-          <Card title="Why they approached us">
-            <p className="rounded-lg border-l-2 border-indigo-400 bg-indigo-50/60 p-3 text-sm leading-relaxed text-zinc-700 dark:bg-indigo-500/10 dark:text-zinc-300">
+          <div className="relative rounded-2xl border border-[#E9D9D4] bg-[#F5EEEC] px-[26px] py-6">
+            <span className="absolute left-[22px] top-3.5 font-serif text-[46px] leading-none text-[#C99A92]">
+              &ldquo;
+            </span>
+            <div className="mb-2.5 pl-[26px] text-[11px] font-semibold uppercase tracking-[0.14em] text-[#A87F77]">
+              Why they approached us
+            </div>
+            <p className="m-0 pl-[26px] font-serif text-[18px] italic leading-snug text-[#6E4B45]">
               {client.whyApproached}
             </p>
-          </Card>
+          </div>
 
           <Card title="Goals">
-            <ul className="space-y-4">
+            <div className="flex flex-col gap-[18px]">
               {client.goals.map((goal) => (
-                <li key={goal.name}>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                <div key={goal.name}>
+                  <div className="mb-[7px] flex items-baseline justify-between gap-3">
+                    <span className="text-sm font-semibold text-ink-soft">
                       {goal.name}
-                    </p>
+                    </span>
                     {goal.progress !== undefined && (
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                      <span className="text-xs font-semibold tabular-nums text-[#5C6E86]">
                         {goal.progress}%
                       </span>
                     )}
                   </div>
-                  <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
-                    {goal.detail}
-                  </p>
                   {goal.progress !== undefined && (
-                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                    <div className="mb-2 h-[7px] overflow-hidden rounded-[7px] bg-[#EEE8DB]">
                       <div
-                        className="h-full rounded-full bg-indigo-500"
+                        className="h-full rounded-[7px] [background:linear-gradient(90deg,#3F5681,#34548C)]"
                         style={{ width: `${goal.progress}%` }}
                       />
                     </div>
                   )}
-                </li>
+                  <p className="m-0 text-[13px] leading-[1.55] text-muted">
+                    {goal.detail}
+                  </p>
+                </div>
               ))}
-            </ul>
+            </div>
           </Card>
 
           <Card title="Portfolio">
             <AllocationBar allocation={client.allocation} />
-            <div className="mt-5 space-y-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+            <div className="mt-[22px] flex flex-col border-t border-line-soft">
               {client.accounts.map((account) => (
                 <div
                   key={`${account.type}-${account.institution}`}
-                  className="flex items-center justify-between text-sm"
+                  className="flex items-center justify-between gap-3.5 border-b border-line-soft py-[13px]"
                 >
-                  <div>
-                    <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                  <span className="flex flex-col gap-0.5">
+                    <span className="text-sm font-semibold text-ink-soft">
                       {account.type}
                     </span>
-                    <span className="text-zinc-500 dark:text-zinc-400">
-                      {" "}
-                      · {account.institution}
+                    <span className="text-xs text-quiet">
+                      {account.institution}
                     </span>
-                  </div>
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                    {formatCurrency(account.balance)}
+                  </span>
+                  <span className="text-[15px] font-semibold tabular-nums text-ink-soft">
+                    {formatCurrencyFull(account.balance)}
                   </span>
                 </div>
               ))}
@@ -161,123 +153,125 @@ export default async function ClientProfilePage(
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
-          <Card title="Relationship">
-            <dl className="space-y-3 text-sm">
-              <Row label="Advisor" value={client.advisor} />
-              <Row label="Review cadence" value={client.cadence} />
-              <Row label="Next review" value={formatDate(client.nextReview)} />
-              <Row label="Risk tolerance" value={client.riskTolerance} />
-              <Row label="Time horizon" value={client.timeHorizon} />
-            </dl>
-          </Card>
+        <div className="flex flex-col gap-[18px]">
+          <MiniCard title="Relationship">
+            <Row label="Advisor" value={client.advisor} />
+            <Row label="Review cadence" value={client.cadence} />
+            <Row label="Next review" value={formatDate(client.nextReview)} />
+            <Row label="Risk tolerance" value={client.riskTolerance} />
+            <Row label="Time horizon" value={client.timeHorizon} />
+          </MiniCard>
 
-          <Card title="Household">
-            <dl className="space-y-3 text-sm">
-              <Row label="Spouse / partner" value={client.spouse ?? "—"} />
-              {client.dependents.length > 0 ? (
-                client.dependents.map((d) => (
-                  <Row key={d.name} label={d.relation} value={d.name} />
-                ))
-              ) : (
-                <Row label="Dependents" value="None" />
-              )}
-            </dl>
-          </Card>
+          <MiniCard title="Household">
+            <Row label="Spouse / partner" value={client.spouse ?? "—"} />
+            {client.dependents.length > 0 ? (
+              client.dependents.map((d) => (
+                <Row key={d.name} label={d.relation} value={d.name} />
+              ))
+            ) : (
+              <Row label="Dependents" value="None" />
+            )}
+          </MiniCard>
 
-          <Card title="Contact">
-            <ul className="space-y-1.5 text-sm">
-              <li>
-                <a
-                  href={`mailto:${client.email}`}
-                  className="text-indigo-600 hover:underline dark:text-indigo-400"
-                >
-                  {client.email}
-                </a>
-              </li>
-              <li>
-                <a
-                  href={`tel:${client.phone.replace(/[^\d+]/g, "")}`}
-                  className="text-indigo-600 hover:underline dark:text-indigo-400"
-                >
-                  {client.phone}
-                </a>
-              </li>
-            </ul>
-            <div className="mt-3 flex flex-wrap gap-1.5">
+          <MiniCard title="Contact">
+            <a
+              href={`mailto:${client.email}`}
+              className="flex items-center gap-2.5 py-2 text-[13px] font-semibold text-accent"
+            >
+              <Mail className="h-[15px] w-[15px] text-dim" />
+              {client.email}
+            </a>
+            <a
+              href={`tel:${tel}`}
+              className="flex items-center gap-2.5 py-2 text-[13px] font-semibold text-accent"
+            >
+              <Phone className="h-[15px] w-[15px] text-dim" />
+              {client.phone}
+            </a>
+            <div className="mt-3 flex flex-wrap gap-1.5 border-t border-line-soft pt-3">
               {client.serviceTopics.map((topic) => (
                 <span
                   key={topic}
-                  className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+                  className="rounded-md bg-[#EAEEF5] px-2.5 py-[3px] text-[11px] font-medium text-[#5C6E86]"
                 >
                   {topic}
                 </span>
               ))}
             </div>
-          </Card>
+          </MiniCard>
 
-          <Card title="Meetings">
+          <MiniCard title="Recent meetings">
             {clientMeetings.length > 0 ? (
-              <ul className="space-y-3">
-                {clientMeetings.slice(0, 4).map((m) => (
-                  <li key={m.id} className="flex items-start gap-3 text-sm">
+              clientMeetings.slice(0, 4).map((m) => {
+                const tone = statusMeta(m.status);
+                return (
+                  <Link
+                    key={m.id}
+                    href="/meetings"
+                    className="flex items-center gap-[11px] border-t border-line-soft py-[11px] first:border-t-0"
+                  >
                     <span
-                      className={`mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-1 ring-inset ${
-                        MODE_STYLES[m.mode]
-                      }`}
-                    >
-                      <ModeIcon mode={m.mode} className="h-3.5 w-3.5" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                      className="h-[7px] w-[7px] flex-none rounded-full"
+                      style={{ background: tone.fg }}
+                    />
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="text-[13px] font-semibold text-ink-soft">
                         {m.title}
-                      </p>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                        {formatDayLabel(m.start)} · {formatTime(m.start)}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                      </span>
+                      <span className="text-[11.5px] text-quiet">
+                        {formatDayLabel(m.start)} · {m.status}
+                      </span>
+                    </span>
+                  </Link>
+                );
+              })
             ) : (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                No meetings on record.
+              <p className="m-0 text-[13px] text-quiet">
+                No recent meetings on file.
               </p>
             )}
-            <Link
-              href="/meetings"
-              className="mt-3 inline-block text-sm text-indigo-600 hover:underline dark:text-indigo-400"
-            >
-              View all meetings →
-            </Link>
-          </Card>
+          </MiniCard>
 
-          <Card title="Notes">
-            <ul className="space-y-2">
+          <MiniCard title="Notes">
+            <div className="flex flex-col gap-2.5">
               {client.notes.map((note, i) => (
-                <li
+                <div
                   key={i}
-                  className="flex gap-2 text-sm text-zinc-700 dark:text-zinc-300"
+                  className="flex gap-[9px] text-[13px] leading-snug text-body"
                 >
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-400" />
-                  {note}
-                </li>
+                  <span className="mt-[7px] h-[5px] w-[5px] flex-none rounded-full bg-[#C7BFAD]" />
+                  <span>{note}</span>
+                </div>
               ))}
-            </ul>
-          </Card>
+            </div>
+          </MiniCard>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  first,
+}: {
+  label: string;
+  value: string;
+  first?: boolean;
+}) {
   return (
-    <div>
-      <dt className="text-xs text-zinc-500 dark:text-zinc-400">{label}</dt>
-      <dd className="mt-0.5 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+    <div
+      className={`flex flex-1 flex-col gap-1.5 pl-5 ${
+        first ? "" : "border-l border-line-soft"
+      }`}
+    >
+      <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-dim">
+        {label}
+      </span>
+      <span className="font-serif text-[28px] font-medium tabular-nums tracking-[-0.01em] text-[#231F17]">
         {value}
-      </dd>
+      </span>
     </div>
   );
 }
@@ -290,10 +284,27 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+    <section className="rounded-2xl border border-hair bg-panel p-6">
+      <h3 className="mb-3.5 mt-0 font-serif text-[18px] font-medium text-ink-soft">
         {title}
-      </h2>
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+function MiniCard({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-hair bg-panel px-[22px] py-5">
+      <h3 className="mb-3.5 mt-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-quiet">
+        {title}
+      </h3>
       {children}
     </section>
   );
@@ -301,11 +312,11 @@ function Card({
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-3">
-      <dt className="text-zinc-500 dark:text-zinc-400">{label}</dt>
-      <dd className="text-right font-medium text-zinc-900 dark:text-zinc-100">
+    <div className="flex items-baseline justify-between gap-3 border-t border-line-soft py-2 first:border-t-0">
+      <span className="text-[12.5px] text-quiet">{label}</span>
+      <span className="text-right text-[13px] font-semibold text-ink-soft">
         {value}
-      </dd>
+      </span>
     </div>
   );
 }

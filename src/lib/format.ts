@@ -1,6 +1,3 @@
-import type { LeadStatus } from "./leads";
-import type { MeetingMode, MeetingStatus } from "./meetings";
-
 /** Format a USD amount compactly, e.g. 850000 -> "$850K", 2400000 -> "$2.4M". */
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -9,6 +6,11 @@ export function formatCurrency(amount: number): string {
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(amount);
+}
+
+/** Format a USD amount in full, e.g. 850000 -> "$850,000". */
+export function formatCurrencyFull(amount: number): string {
+  return "$" + Math.round(amount).toLocaleString("en-US");
 }
 
 /** Format an ISO date as e.g. "Jun 16, 2026". */
@@ -34,7 +36,7 @@ export function dayKey(iso: string): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-/** Day header label like "Today", "Tomorrow", "Yesterday", or "Mon, Jun 23". */
+/** Day header label like "Today", "Tomorrow", "Yesterday", or "Monday". */
 export function formatDayLabel(iso: string, now: Date = new Date()): string {
   const d = new Date(iso);
   const startOf = (x: Date) =>
@@ -43,9 +45,14 @@ export function formatDayLabel(iso: string, now: Date = new Date()): string {
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Tomorrow";
   if (diffDays === -1) return "Yesterday";
-  return d.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
+  return d.toLocaleDateString("en-US", { weekday: "long" });
+}
+
+/** Long date like "Monday, June 23". */
+export function formatLongDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
     day: "numeric",
   });
 }
@@ -78,57 +85,74 @@ export function initials(name: string): string {
     .join("");
 }
 
-/** Tailwind classes for a status badge. */
-export const STATUS_STYLES: Record<LeadStatus, string> = {
-  New: "bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/30",
-  Contacted:
-    "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/30",
-  Qualified:
-    "bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/30",
-  Proposal:
-    "bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/30",
+/* ----------------------------------------------------------------------------
+ * Status tones — a soft colored dot + label on a tinted pill, per the MEETU
+ * editorial palette. One helper maps every lead / meeting / client status.
+ * ------------------------------------------------------------------------- */
+
+export type StatusMeta = {
+  /** Foreground: dot + label color. */
+  fg: string;
+  /** Pill background tint. */
+  bg: string;
+  /** Display label. */
+  label: string;
 };
 
-/** Accent color (left rail / time dot) for a meeting mode. */
-export const MODE_DOT: Record<MeetingMode, string> = {
-  Video: "bg-sky-500",
-  Phone: "bg-amber-500",
-  "In-person": "bg-emerald-500",
+const TONES = {
+  blue: { fg: "#34548C", bg: "#E7EBF3" },
+  green: { fg: "#566F4F", bg: "#E8EDE4" },
+  clay: { fg: "#946431", bg: "#F1E9DB" },
+  rust: { fg: "#9C3B33", bg: "#F2E4E0" },
+  grey: { fg: "#7A7264", bg: "#ECE7DD" },
+} as const;
+
+const STATUS_TONE: Record<string, keyof typeof TONES> = {
+  // Leads
+  New: "grey",
+  Contacted: "blue",
+  Qualified: "green",
+  Proposal: "clay",
+  // Meetings
+  Confirmed: "green",
+  Tentative: "clay",
+  Completed: "grey",
+  Canceled: "rust",
+  // Clients
+  Active: "green",
+  Onboarding: "blue",
+  "Review due": "rust",
 };
 
-/** Tailwind classes for a meeting mode badge. */
-export const MODE_STYLES: Record<MeetingMode, string> = {
-  Video:
-    "bg-sky-50 text-sky-700 ring-sky-600/20 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/30",
-  Phone:
-    "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/30",
-  "In-person":
-    "bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/30",
-};
+export function statusMeta(value: string): StatusMeta {
+  const tone = TONES[STATUS_TONE[value] ?? "grey"];
+  return { fg: tone.fg, bg: tone.bg, label: value };
+}
 
-/** Tailwind classes for a meeting status badge. */
-export const MEETING_STATUS_STYLES: Record<MeetingStatus, string> = {
-  Confirmed:
-    "bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/30",
-  Tentative:
-    "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/30",
-  Completed:
-    "bg-zinc-100 text-zinc-600 ring-zinc-500/20 dark:bg-zinc-700/40 dark:text-zinc-300 dark:ring-zinc-500/30",
-  Canceled:
-    "bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/30",
-};
-
-/** Deterministic avatar gradient based on the name. */
+/** Deterministic avatar gradient (CSS) based on the name. */
 export function avatarGradient(name: string): string {
-  const gradients = [
-    "from-indigo-500 to-purple-500",
-    "from-sky-500 to-blue-600",
-    "from-emerald-500 to-teal-600",
-    "from-rose-500 to-pink-600",
-    "from-amber-500 to-orange-600",
-    "from-violet-500 to-fuchsia-600",
+  const palettes = [
+    ["#3F5681", "#717FA3"],
+    ["#7E4A44", "#A6746C"],
+    ["#566F4F", "#83967A"],
+    ["#8A6A3A", "#B29772"],
+    ["#48586A", "#7C8A98"],
+    ["#6A5278", "#937DA1"],
   ];
   let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + hash * 31;
-  return gradients[Math.abs(hash) % gradients.length];
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  const [a, b] = palettes[hash % palettes.length];
+  return `linear-gradient(140deg, ${a}, ${b})`;
+}
+
+/** Color for an allocation slice (bar + legend). */
+export function allocColor(label: string): string {
+  const map: Record<string, string> = {
+    Stocks: "#34548C",
+    Bonds: "#5E7359",
+    Cash: "#B5AC9B",
+    Alternatives: "#A8763C",
+    "Real Estate": "#9C3B33",
+  };
+  return map[label] ?? "#9B927F";
 }

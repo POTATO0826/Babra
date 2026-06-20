@@ -1,27 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Shippori_Mincho } from "next/font/google";
+import { Hanken_Grotesk, Newsreader } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const hanken = Hanken_Grotesk({
+  variable: "--font-hanken",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
   subsets: ["latin"],
-});
-
-const display = Shippori_Mincho({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "700", "800"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
   title: "MEETU — Advisory, distilled",
   description:
-    "A calm, flowing workspace for financial advisors: leads, meetings, and client profiles.",
+    "A calm, editorial workspace for the independent financial advisor: leads, meetings, and client profiles held in one quiet place.",
 };
 
 export default function RootLayout({
@@ -32,9 +27,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${display.variable} dark h-full antialiased`}
+      className={`${hanken.variable} ${newsreader.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full bg-paper text-ink-soft">{children}</body>
     </html>
   );
 }

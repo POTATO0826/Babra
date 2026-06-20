@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Meeting } from "@/lib/meetings";
-import { dayKey, formatDayLabel } from "@/lib/format";
+import { dayKey, formatDayLabel, formatLongDate } from "@/lib/format";
 import { MeetingRow } from "./meeting-row";
 import { MeetingDrawer } from "./meeting-drawer";
 
@@ -11,6 +11,7 @@ type View = "Upcoming" | "Past";
 type DayGroup = {
   key: string;
   label: string;
+  dateLine: string;
   meetings: Meeting[];
 };
 
@@ -39,7 +40,12 @@ export function MeetingsAgenda({ meetings }: { meetings: Meeting[] }) {
       const key = dayKey(m.start);
       let group = byDay.get(key);
       if (!group) {
-        group = { key, label: formatDayLabel(m.start, now), meetings: [] };
+        group = {
+          key,
+          label: formatDayLabel(m.start, now),
+          dateLine: formatLongDate(m.start),
+          meetings: [],
+        };
         byDay.set(key, group);
       }
       group.meetings.push(m);
@@ -54,54 +60,79 @@ export function MeetingsAgenda({ meetings }: { meetings: Meeting[] }) {
     [meetings, now]
   );
 
+  // The very first upcoming meeting gets a "next" accent rail.
+  const nextId = view === "Upcoming" ? groups[0]?.meetings[0]?.id : undefined;
+
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Meetings
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          {upcomingCount} upcoming{" "}
-          {upcomingCount === 1 ? "meeting" : "meetings"}. Click one for full
-          details.
-        </p>
+    <section className="mx-auto max-w-[980px] px-14 pb-20 pt-12">
+      <header className="relative mb-[30px] flex items-end justify-between gap-6 overflow-hidden border-b border-line pb-[26px]">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-10 -top-[90px] h-[200px] w-[280px] opacity-50 blur-[30px]"
+          style={{
+            background:
+              "radial-gradient(55% 70% at 70% 30%, rgba(52,84,140,0.22), transparent 70%), radial-gradient(45% 55% at 40% 60%, rgba(156,59,51,0.14), transparent 72%)",
+          }}
+        />
+        <div className="relative">
+          <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-dim">
+            Schedule
+          </div>
+          <h1 className="m-0 font-serif text-[38px] font-medium leading-none tracking-[-0.01em] text-[#231F17]">
+            Meetings
+          </h1>
+          <p className="mt-3 text-[14.5px] text-muted">
+            {upcomingCount} upcoming {upcomingCount === 1 ? "meeting" : "meetings"}
+          </p>
+        </div>
+
+        <div className="relative flex rounded-[11px] border border-line bg-tile p-[3px]">
+          {(["Upcoming", "Past"] as View[]).map((v) => {
+            const on = view === v;
+            return (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                className="relative rounded-lg px-4 py-[7px] text-[13px] font-semibold transition-colors"
+                style={{ color: on ? "#231F17" : "#9B927F" }}
+              >
+                {on && (
+                  <span className="absolute inset-0 rounded-lg bg-panel shadow-[0_1px_2px_rgba(38,34,25,0.07)]" />
+                )}
+                <span className="relative">{v}</span>
+              </button>
+            );
+          })}
+        </div>
       </header>
 
-      {/* View toggle */}
-      <div className="mb-6 inline-flex rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
-        {(["Upcoming", "Past"] as View[]).map((v) => (
-          <button
-            key={v}
-            type="button"
-            onClick={() => setView(v)}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-              view === v
-                ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-50"
-                : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-            }`}
-          >
-            {v}
-          </button>
-        ))}
-      </div>
-
       {groups.length === 0 ? (
-        <p className="py-16 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          No {view.toLowerCase()} meetings.
-        </p>
+        <div className="px-5 py-20 text-center text-quiet">
+          <div className="mb-2 font-serif text-[21px] text-muted">
+            Nothing on the calendar
+          </div>
+          <div className="text-sm">No {view.toLowerCase()} meetings to show.</div>
+        </div>
       ) : (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-[26px]">
           {groups.map((group) => (
             <section key={group.key}>
-              <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                {group.label}
-              </h2>
-              <div className="divide-y divide-zinc-100 overflow-hidden rounded-xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
-                {group.meetings.map((meeting) => (
+              <div className="mb-3 flex items-baseline gap-3 pl-0.5">
+                <h2 className="m-0 font-serif text-[19px] font-medium text-ink-soft">
+                  {group.label}
+                </h2>
+                <span className="text-xs tracking-[0.04em] text-dim">
+                  {group.dateLine}
+                </span>
+              </div>
+              <div className="overflow-hidden rounded-[15px] border border-hair bg-panel shadow-[0_1px_2px_rgba(38,34,25,0.03),0_14px_30px_-24px_rgba(38,34,25,0.22)]">
+                {group.meetings.map((meeting, i) => (
                   <MeetingRow
                     key={meeting.id}
                     meeting={meeting}
-                    selected={selected?.id === meeting.id}
+                    first={i === 0}
+                    isNext={meeting.id === nextId}
                     onSelect={setSelected}
                   />
                 ))}
@@ -112,6 +143,6 @@ export function MeetingsAgenda({ meetings }: { meetings: Meeting[] }) {
       )}
 
       <MeetingDrawer meeting={selected} onClose={() => setSelected(null)} />
-    </div>
+    </section>
   );
 }
