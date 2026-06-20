@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { formatDate } from "@/lib/format";
+import { formatSuggestedTouchpoint } from "@/lib/touchpoints";
 
 const SOURCE_TONE = {
   WhatsApp: "bg-[#E7EBF3] text-[#34548C]",
@@ -50,7 +51,11 @@ export function RelationshipTouchpoints({ clientId }: { clientId: string }) {
               {activity.activity}
             </p>
             <p className="mt-1.5 text-[12px] leading-snug text-muted">
-              {activity.suggestedTouchpoint}
+              {formatSuggestedTouchpoint(
+                activity.suggestedTouchpoint,
+                activity.activity,
+                activity.category,
+              )}
             </p>
           </div>
         ))}

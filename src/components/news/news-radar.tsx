@@ -5,6 +5,7 @@ import { useAction, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Check, Search } from "@/components/icons";
+import { buttonClass } from "@/components/ui";
 
 const ACCENT = "#B5832E";
 
@@ -175,11 +176,7 @@ export function NewsRadar() {
             type="button"
             onClick={() => runSearch(query)}
             disabled={loading || query.trim().length === 0}
-            className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-[#C9A23A] px-6 py-[11px] text-[13px] font-semibold text-[#3A2C0A] shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_10px_24px_-12px_rgba(181,131,46,0.9)] transition-[transform,box-shadow] hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-            style={{
-              background:
-                "linear-gradient(135deg,#F4DA80 0%,#E0BB4E 42%,#C2952A 100%)",
-            }}
+            className={buttonClass("gold", "md")}
           >
             {loading ? (
               <>

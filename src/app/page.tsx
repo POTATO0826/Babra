@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { NeuralNetwork } from "@/components/backdrop/neural-network";
 import { ArrowRight } from "@/components/icons";
+import { buttonClass } from "@/components/ui";
 
 const pillars = [
   { label: "Leads", dot: "#34548C" },
   { label: "Meetings", dot: "#566F4F" },
   { label: "Client Profiles", dot: "#9C3B33" },
-  { label: "News Radar", dot: "#B5832E", tag: "New" },
+  { label: "News Radar", dot: "#B5832E" },
+  { label: "Memory", dot: "#6A5278", tag: "New" },
 ];
 
 export default function LandingPage() {
@@ -52,25 +54,25 @@ export default function LandingPage() {
           Independent advisory, distilled
         </div>
 
-        <h1 className="animate-fade-up m-0 max-w-[760px] font-serif text-[52px] font-medium leading-[1.06] tracking-[-0.015em] text-[#1C1913] [animation-delay:0.28s]">
+        <h1 className="animate-fade-up m-0 max-w-[780px] font-serif text-[52px] font-medium leading-[1.06] tracking-[-0.015em] text-[#1C1913] [animation-delay:0.28s]">
           Your book of business,
           <br />
-          in one calm place.
+          with a memory of its own.
         </h1>
 
-        <p className="animate-fade-up mt-[22px] max-w-[520px] text-[15.5px] leading-[1.6] text-muted [animation-delay:0.42s]">
+        <p className="animate-fade-up mt-[22px] max-w-[540px] text-[15.5px] leading-[1.6] text-muted [animation-delay:0.42s]">
           Leads, meetings, and client profiles — held together with quiet
-          precision. Now with AI that turns today&rsquo;s news into ready-to-use
-          conversation starters for every client.
+          precision. Now with an AI second brain that remembers every client and
+          turns today&rsquo;s news into ready-to-use conversation starters.
         </p>
 
-        <div className="animate-fade-up mt-[30px] flex items-center gap-4 [animation-delay:0.56s]">
-          <Link
-            href="/meetings"
-            className="inline-flex items-center gap-2.5 rounded-xl border border-[#1C1A16] bg-[#1C1A16] px-6 py-[13px] text-sm font-semibold text-[#F4F0E6] shadow-[0_14px_30px_-16px_rgba(28,26,22,0.55)] transition-transform hover:-translate-y-0.5"
-          >
+        <div className="animate-fade-up mt-[30px] flex flex-wrap items-center justify-center gap-3 [animation-delay:0.56s]">
+          <Link href="/meetings" className={buttonClass("ink", "lg")}>
             Open workspace
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+          <Link href="/graph" className={buttonClass("ghost", "lg")}>
+            Explore the AI brain
           </Link>
         </div>
 

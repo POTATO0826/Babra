@@ -8,6 +8,7 @@ import { MeetingRow } from "./meeting-row";
 import { MeetingDrawer } from "./meeting-drawer";
 import { MeetingsCalendar } from "./meetings-calendar";
 import { AgendaIcon, CalendarIcon, Plus } from "@/components/icons";
+import { buttonClass } from "@/components/ui";
 
 type Layout = "Agenda" | "Calendar";
 type View = "Upcoming" | "Past";
@@ -101,10 +102,7 @@ export function MeetingsAgenda({
           </p>
         </div>
 
-        <Link
-          href="/meetings/new"
-          className="relative inline-flex items-center gap-2 rounded-xl bg-[#231F17] px-4 py-[10px] text-[13px] font-semibold text-[#F8F4EC] shadow-[0_12px_22px_-15px_rgba(35,31,23,0.6)] transition hover:-translate-y-0.5"
-        >
+        <Link href="/meetings/new" className={buttonClass("gold", "sm")}>
           <Plus className="h-4 w-4" />
           New meeting
         </Link>

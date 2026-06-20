@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { MemoryNode } from "./memory-graph";
 import { Close, Plus } from "@/components/icons";
+import { buttonClass } from "@/components/ui";
 
 export const TYPE_COLOR: Record<string, string> = {
   person: "#34548C",
@@ -151,6 +152,20 @@ function Overview({ stats }: { stats: GraphStats }) {
               placeholder="Ask about your whole practice…"
               className="meeting-glass-field w-full rounded-[12px] border border-white/65 bg-white/25 px-3 py-2 text-[13px] text-[#1F1B15] outline-none backdrop-blur-xl transition placeholder:text-[#8A8170] focus:border-[#B5832E]/45 focus:bg-white/40"
             />
+            <button
+              type="button"
+              onClick={() => ask(question)}
+              disabled={!question.trim() || asking}
+              className={buttonClass("gold", "sm", "self-start")}
+            >
+              {asking ? (
+                <>
+                  <Spinner /> Thinking…
+                </>
+              ) : (
+                "Ask AI"
+              )}
+            </button>
             <div className="flex flex-wrap gap-1.5">
               {SUGGESTIONS.map((s) => (
                 <button
@@ -198,8 +213,10 @@ function Detail({
   const accent = colorOf(node.type);
   const clientId = node.clientId as Id<"clients"> | undefined;
 
-  const [memories, setMemories] = useState<string[] | null>(null);
-  const [memLoading, setMemLoading] = useState(false);
+  const [memories, setMemories] = useState<string[] | null>(
+    clientId ? null : [],
+  );
+  const [memLoading, setMemLoading] = useState(Boolean(clientId));
   const [memoText, setMemoText] = useState("");
   const [memoSaving, setMemoSaving] = useState(false);
   const [memoSaved, setMemoSaved] = useState(false);
@@ -207,20 +224,23 @@ function Detail({
   const [answer, setAnswer] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
 
-  const loadedFor = useRef<string | null>(null);
   useEffect(() => {
-    if (loadedFor.current === node.id) return;
-    loadedFor.current = node.id;
-    if (!clientId) {
-      setMemories([]);
-      return;
-    }
-    setMemLoading(true);
+    if (!clientId) return;
+    let cancelled = false;
     fetchMemories({ clientId })
-      .then((r) => setMemories(r.memories))
-      .catch(() => setMemories([]))
-      .finally(() => setMemLoading(false));
-  }, [node.id, clientId, fetchMemories]);
+      .then((r) => {
+        if (!cancelled) setMemories(r.memories);
+      })
+      .catch(() => {
+        if (!cancelled) setMemories([]);
+      })
+      .finally(() => {
+        if (!cancelled) setMemLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId, fetchMemories]);
 
   const onAdd = async () => {
     const text = memoText.trim();
@@ -428,11 +448,7 @@ function Detail({
               type="button"
               onClick={ask}
               disabled={!question.trim() || asking}
-              className="inline-flex items-center justify-center gap-2 self-start rounded-[11px] border border-[#C9A23A] px-4 py-1.5 text-[12px] font-semibold text-[#3A2C0A] shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-              style={{
-                background:
-                  "linear-gradient(135deg,#F4DA80 0%,#E0BB4E 42%,#C2952A 100%)",
-              }}
+              className={buttonClass("gold", "sm", "self-start")}
             >
               {asking ? (
                 <>

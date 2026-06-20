@@ -7,6 +7,7 @@ import { ArrowLeft, CalendarIcon } from "@/components/icons";
 import type { ServiceInterest } from "@/lib/leads";
 import { saveCreatedMeeting } from "@/lib/meeting-storage";
 import type { Meeting, MeetingMode, MeetingStatus } from "@/lib/meetings";
+import { buttonClass } from "@/components/ui";
 
 const topics: ServiceInterest[] = [
   "Retirement Planning",
@@ -278,7 +279,7 @@ export function CreateMeetingForm() {
             <button
               type="submit"
               disabled={saving}
-              className="rounded-[10px] bg-[#231F17] px-5 py-2.5 text-[13px] font-semibold text-[#F8F4EC] shadow-[0_10px_20px_-13px_rgba(35,31,23,0.7)] transition hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60"
+              className={buttonClass("ink", "sm")}
             >
               {saving ? "Creating meeting…" : "Create meeting"}
             </button>

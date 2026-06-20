@@ -6,6 +6,7 @@ import type { ClientActivity } from "@/lib/client-activities";
 import { Avatar } from "@/components/ui";
 import { Chevron } from "@/components/icons";
 import { formatDate } from "@/lib/format";
+import { formatSuggestedTouchpoint } from "@/lib/touchpoints";
 
 const CATEGORY_TONE: Record<
   ClientActivity["category"],
@@ -217,7 +218,11 @@ function ActivityCard({ activity }: { activity: ClientActivity }) {
           Suggested touchpoint
         </div>
         <p className="m-0 text-[13px] leading-[1.5] text-muted">
-          {activity.suggestedTouchpoint}
+          {formatSuggestedTouchpoint(
+            activity.suggestedTouchpoint,
+            activity.activity,
+            activity.category,
+          )}
         </p>
       </div>
 
