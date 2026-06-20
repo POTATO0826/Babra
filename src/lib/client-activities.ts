@@ -15,7 +15,7 @@ export type ClientActivity = {
   timeframe: string;
   mentionedAt: string;
   suggestedTouchpoint: string;
-  source: "WhatsApp" | "Manual" | "Other";
+  source: "WhatsApp" | "Facebook" | "Manual" | "Other";
   priority: "Upcoming" | "Recent" | "Watch";
 };
 

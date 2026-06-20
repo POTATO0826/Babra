@@ -48,6 +48,7 @@ export type Client = {
   location: string;
   email: string;
   phone: string;
+  facebookProfileUrl?: string;
   status: ClientStatus;
 
   // Relationship
@@ -439,6 +440,7 @@ export function mapClient(client: Doc<"clients">): Client {
     location: client.location,
     email: client.email,
     phone: client.phone,
+    facebookProfileUrl: client.facebookProfileUrl,
     status: client.status,
     clientSince: client.clientSince,
     advisor: client.advisorName,

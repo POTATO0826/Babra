@@ -13,6 +13,8 @@ import {
   statusMeta,
 } from "@/lib/format";
 import { AllocationBar } from "@/components/clients/allocation-bar";
+import { FacebookScrapeControl } from "@/components/clients/facebook-scrape-control";
+import { RelationshipTouchpoints } from "@/components/clients/relationship-touchpoints";
 import { Avatar, StatusPill } from "@/components/ui";
 import { ArrowLeft, Mail, Phone } from "@/components/icons";
 import { api } from "../../../../../convex/_generated/api";
@@ -204,6 +206,20 @@ export default function ClientProfilePage(props: ClientProfilePageProps) {
                 </div>
               ))}
             </div>
+            <div className="mt-6 grid gap-5 border-t border-line-soft pt-5 md:grid-cols-2">
+              <div className="min-w-0">
+                <SubsectionTitle>Touchpoints</SubsectionTitle>
+                <RelationshipTouchpoints clientId={client.id} />
+              </div>
+              <div className="min-w-0">
+                <SubsectionTitle>Facebook posts</SubsectionTitle>
+                <FacebookScrapeControl
+                  clientId={client.id}
+                  initialUrl={client.facebookProfileUrl}
+                  showControls={false}
+                />
+              </div>
+            </div>
           </Card>
         </div>
 
@@ -243,6 +259,16 @@ export default function ClientProfilePage(props: ClientProfilePageProps) {
               <Phone className="h-[15px] w-[15px] text-dim" />
               {client.phone}
             </a>
+            <div className="mt-3 border-t border-line-soft pt-3">
+              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-quiet">
+                Facebook
+              </div>
+              <FacebookScrapeControl
+                clientId={client.id}
+                initialUrl={client.facebookProfileUrl}
+                showPosts={false}
+              />
+            </div>
             <div className="mt-3 flex flex-wrap gap-1.5 border-t border-line-soft pt-3">
               {client.serviceTopics.map((topic) => (
                 <span
@@ -362,6 +388,14 @@ function MiniCard({
       </h3>
       {children}
     </section>
+  );
+}
+
+function SubsectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h4 className="mb-3 mt-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-quiet">
+      {children}
+    </h4>
   );
 }
 

@@ -86,6 +86,12 @@ const clientActivityPriority = v.union(
   v.literal("Watch"),
 );
 
+const socialScrapeStatus = v.union(
+  v.literal("Running"),
+  v.literal("Succeeded"),
+  v.literal("Failed"),
+);
+
 const conversationAnalysisStatus = v.union(
   v.literal("Idle"),
   v.literal("Queued"),
@@ -192,6 +198,7 @@ export default defineSchema({
     situation: v.string(),
     whyApproached: v.string(),
     notes: v.array(v.string()),
+    facebookProfileUrl: v.optional(v.string()),
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
   })
@@ -238,6 +245,7 @@ export default defineSchema({
     suggestedTouchpoint: v.string(),
     source: v.union(
       v.literal("WhatsApp"),
+      v.literal("Facebook"),
       v.literal("Manual"),
       v.literal("Other"),
     ),
@@ -251,6 +259,47 @@ export default defineSchema({
     .index("by_priority", ["priority"])
     .index("by_mentioned_at", ["mentionedAt"])
     .index("by_conversation", ["conversationId"]),
+
+  clientSocialScrapeRuns: defineTable({
+    clientId: v.id("clients"),
+    platform: v.literal("Facebook"),
+    profileUrl: v.string(),
+    provider: v.literal("Apify"),
+    actorId: v.string(),
+    providerRunId: v.optional(v.string()),
+    datasetId: v.optional(v.string()),
+    status: socialScrapeStatus,
+    requestedAt: isoDateTime,
+    completedAt: v.optional(isoDateTime),
+    error: v.optional(v.string()),
+    itemCount: v.number(),
+    createdAt: isoDateTime,
+    updatedAt: isoDateTime,
+  })
+    .index("by_client", ["clientId"])
+    .index("by_status", ["status"]),
+
+  clientSocialPosts: defineTable({
+    clientId: v.id("clients"),
+    scrapeRunId: v.id("clientSocialScrapeRuns"),
+    platform: v.literal("Facebook"),
+    profileUrl: v.string(),
+    externalPostId: v.optional(v.string()),
+    postUrl: v.optional(v.string()),
+    postedAt: v.optional(isoDateTime),
+    text: v.string(),
+    rawPayload: v.any(),
+    analysisStatus: v.union(
+      v.literal("Pending"),
+      v.literal("Processed"),
+      v.literal("Skipped"),
+    ),
+    createdAt: isoDateTime,
+    updatedAt: isoDateTime,
+  })
+    .index("by_client", ["clientId"])
+    .index("by_scrape_run", ["scrapeRunId"])
+    .index("by_post_url", ["postUrl"]),
 
   whatsappConversations: defineTable({
     advisorId: v.id("advisors"),

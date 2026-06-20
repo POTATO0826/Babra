@@ -16,6 +16,8 @@ import type * as manualConversionActions from "../manualConversionActions.js";
 import type * as repair from "../repair.js";
 import type * as reset from "../reset.js";
 import type * as seed from "../seed.js";
+import type * as social from "../social.js";
+import type * as socialActions from "../socialActions.js";
 import type * as whatsapp from "../whatsapp.js";
 
 import type {
@@ -33,6 +35,8 @@ declare const fullApi: ApiFromModules<{
   repair: typeof repair;
   reset: typeof reset;
   seed: typeof seed;
+  social: typeof social;
+  socialActions: typeof socialActions;
   whatsapp: typeof whatsapp;
 }>;
 
