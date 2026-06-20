@@ -8,6 +8,8 @@
  * @module
  */
 
+import type * as conversationAgent from "../conversationAgent.js";
+import type * as conversationAgentActions from "../conversationAgentActions.js";
 import type * as crm from "../crm.js";
 import type * as seed from "../seed.js";
 import type * as whatsapp from "../whatsapp.js";
@@ -19,6 +21,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  conversationAgent: typeof conversationAgent;
+  conversationAgentActions: typeof conversationAgentActions;
   crm: typeof crm;
   seed: typeof seed;
   whatsapp: typeof whatsapp;

@@ -1,11 +1,9 @@
 import { v } from "convex/values";
-import {
-  mutationGeneric as mutation,
-  queryGeneric as query,
-} from "convex/server";
-import type { GenericDataModel, GenericMutationCtx } from "convex/server";
+import { makeFunctionReference } from "convex/server";
+import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 
-type MutationCtx = GenericMutationCtx<GenericDataModel>;
 type ReceiveMessageArgs = {
   providerMessageId: string;
   fromPhone: string;
@@ -16,13 +14,19 @@ type ReceiveMessageArgs = {
   rawPayload: unknown;
 };
 
+const analyzeConversation = makeFunctionReference<
+  "action",
+  { conversationId: Id<"whatsappConversations"> },
+  null
+>("conversationAgentActions:analyzeConversation");
+
 export const listPendingMessages = query({
   args: {},
   handler: async (ctx) => {
     return await ctx.db
       .query("whatsappMessages")
       .withIndex("by_analysis_status", (q) => q.eq("analysisStatus", "Pending"))
-      .collect();
+      .take(50);
   },
 });
 
@@ -77,7 +81,7 @@ async function getOrCreateMvpAdvisor(ctx: MutationCtx) {
 
 async function receiveMessageForAdvisor(
   ctx: MutationCtx,
-  advisorId: unknown,
+  advisorId: Id<"advisors">,
   args: ReceiveMessageArgs,
 ) {
   const existing = await ctx.db
@@ -94,11 +98,8 @@ async function receiveMessageForAdvisor(
   const timestamp = new Date().toISOString();
   const conversation = await ctx.db
     .query("whatsappConversations")
-    .filter((q) =>
-      q.and(
-        q.eq(q.field("advisorId"), advisorId as never),
-        q.eq(q.field("participantPhone"), args.fromPhone),
-      ),
+    .withIndex("by_advisor_participant", (q) =>
+      q.eq("advisorId", advisorId).eq("participantPhone", args.fromPhone),
     )
     .unique();
 
@@ -109,13 +110,18 @@ async function receiveMessageForAdvisor(
       participantPhone: args.fromPhone,
       status: "Open",
       lastMessageAt: args.receivedAt,
+      analysisStatus: "Queued",
+      analysisRequestedAt: timestamp,
       createdAt: timestamp,
       updatedAt: timestamp,
       ...(args.senderName ? { participantName: args.senderName } : {}),
-    } as never));
+    }));
 
-  await ctx.db.patch(conversationId as never, {
+  await ctx.db.patch(conversationId, {
     lastMessageAt: args.receivedAt,
+    analysisStatus: "Queued",
+    analysisRequestedAt: timestamp,
+    analysisError: "",
     updatedAt: timestamp,
     ...(args.senderName ? { participantName: args.senderName } : {}),
   });
@@ -134,7 +140,9 @@ async function receiveMessageForAdvisor(
     analysisStatus: "Pending",
     createdAt: timestamp,
     ...(args.senderName ? { senderName: args.senderName } : {}),
-  } as never);
+  });
+
+  await ctx.scheduler.runAfter(0, analyzeConversation, { conversationId });
 
   return { messageId, conversationId };
 }
