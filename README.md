@@ -1,5 +1,7 @@
 <div align="center">
 
+Video Link: https://youtu.be/mcRrfwpCYZgs
+
 # MEETU
 
 **The calm, AI-assisted workspace for the independent financial advisor.**
