@@ -6,24 +6,8 @@ import makeWASocket, {
   useMultiFileAuthState,
   type WAMessage,
 } from "@whiskeysockets/baileys";
-import { ConvexHttpClient } from "convex/browser";
-import { makeFunctionReference } from "convex/server";
 import pino from "pino";
 import qrcode from "qrcode-terminal";
-
-const receiveMessage = makeFunctionReference<
-  "mutation",
-  {
-    providerMessageId: string;
-    fromPhone: string;
-    toPhone: string;
-    senderName?: string;
-    body: string;
-    receivedAt: string;
-    rawPayload: unknown;
-  },
-  { messageId: string; conversationId: string }
->("whatsapp:receiveMessageForMvpAdvisor");
 
 const log = pino({
   level: process.env.BAILEYS_LOG_LEVEL ?? "info",
@@ -31,13 +15,12 @@ const log = pino({
 const plainLogPrefix = "[baileys-listener]";
 
 const authDir = process.env.BAILEYS_AUTH_DIR ?? ".baileys-auth";
-const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+const internalBaseUrl = process.env.NEXT_INTERNAL_BASE_URL ?? "http://localhost:3000";
+const internalIngestSecret = process.env.INTERNAL_INGEST_SECRET;
 
-if (!convexUrl) {
-  throw new Error("NEXT_PUBLIC_CONVEX_URL is required to store Baileys messages.");
+if (!internalIngestSecret) {
+  throw new Error("INTERNAL_INGEST_SECRET is required for the Baileys listener.");
 }
-
-const convex = new ConvexHttpClient(convexUrl);
 
 async function start() {
   // Baileys names this helper like a React hook, but this is a Node worker.
@@ -152,7 +135,7 @@ async function storeInboundMessage(message: WAMessage) {
     receivedAt,
   });
 
-  const result = await convex.mutation(receiveMessage, {
+  const payload = {
     providerMessageId,
     fromPhone,
     toPhone,
@@ -165,7 +148,25 @@ async function storeInboundMessage(message: WAMessage) {
       contentType: getContentType(message.message),
     },
     ...(message.pushName ? { senderName: message.pushName } : {}),
+  };
+
+  const response = await fetch(`${internalBaseUrl}/api/internal/whatsapp/message`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${internalIngestSecret}`,
+    },
+    body: JSON.stringify(payload),
   });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Internal WhatsApp ingest failed: ${response.status} ${errorText}`,
+    );
+  }
+
+  const result = (await response.json()) as unknown;
 
   log.info({ providerMessageId, result }, "Stored inbound Baileys message");
   console.info(plainLogPrefix, "stored inbound message", {
