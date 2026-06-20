@@ -20,6 +20,8 @@ export const resetAllTables = mutation({
     deleted += await deleteFromAdvisorTasks(ctx);
     deleted += await deleteFromMessageAnalyses(ctx);
     deleted += await deleteFromWebhookEvents(ctx);
+    deleted += await deleteFromClientSocialPosts(ctx);
+    deleted += await deleteFromClientSocialScrapeRuns(ctx);
     deleted += await deleteFromWhatsappMessages(ctx);
     deleted += await deleteFromWhatsappConversations(ctx);
     deleted += await deleteFromMeetings(ctx);
@@ -57,6 +59,18 @@ async function deleteFromMessageAnalyses(ctx: MutationCtx) {
 
 async function deleteFromWebhookEvents(ctx: MutationCtx) {
   const rows = await ctx.db.query("webhookEvents").take(100);
+  for (const row of rows) await ctx.db.delete(row._id);
+  return rows.length;
+}
+
+async function deleteFromClientSocialPosts(ctx: MutationCtx) {
+  const rows = await ctx.db.query("clientSocialPosts").take(100);
+  for (const row of rows) await ctx.db.delete(row._id);
+  return rows.length;
+}
+
+async function deleteFromClientSocialScrapeRuns(ctx: MutationCtx) {
+  const rows = await ctx.db.query("clientSocialScrapeRuns").take(100);
   for (const row of rows) await ctx.db.delete(row._id);
   return rows.length;
 }

@@ -157,6 +157,22 @@ export const listClientActivities = query({
   },
 });
 
+export const listClientActivitiesByClient = query({
+  args: {
+    clientId: v.id("clients"),
+  },
+  handler: async (ctx, args) => {
+    const activities = await ctx.db
+      .query("clientActivities")
+      .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
+      .take(50);
+
+    return activities
+      .sort((a, b) => b.mentionedAt.localeCompare(a.mentionedAt))
+      .slice(0, 10);
+  },
+});
+
 async function convertLead(
   ctx: MutationCtx,
   leadId: Id<"leads">,
